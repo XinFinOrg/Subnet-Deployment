@@ -3,7 +3,7 @@ name: Build and update image
 on:
   push:
     branches:
-      - main
+      - master
       - generator*
     paths: 
       - deployment-generator/**
@@ -18,7 +18,7 @@ jobs:
     environment: DockerHub
     defaults:
       run:
-        working-directory: subnet/deployment-generator
+        working-directory: deployment-generator
     steps:
       - name: Check out code
         uses: actions/checkout@v3

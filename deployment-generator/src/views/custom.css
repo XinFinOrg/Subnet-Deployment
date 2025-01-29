@@ -108,12 +108,17 @@
 }
 
 /* expanding after selection */
-#linuxoption{
+#ipoption{
   display:none;
 }
-#os-radio-linux:checked+#linuxoption{
+#checkbox-num-machine{
+  display:none;
+}
+#checkbox-num-machine:checked+#ipoption{
   display:block;
 }
+
+
 
 #customkeys{
   display:none;

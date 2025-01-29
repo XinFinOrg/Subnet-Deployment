@@ -30,45 +30,48 @@ body
         label() Number of Subnet Nodes
         input#text-num-subnet(type='number' placeholder='3' name="text-num-subnet")
         span.pure-form-message-inline Required
-        
+
       .pure-control-group 
-        .info-container 
+        .info-container
           .info-icon(tabindex="0" role="button" aria-label="more info") ?
-          .tooltip
-            p - WSL is not supported yet
-            p - Mac is only suitable for testing purposes
-        label() Operating System
-        br
-        br
-        label.pure-radio(for='os-radio-mac')
-        input#os-radio-mac(type='radio' name='osradio' value='os-radio-mac' checked)
-        |   Mac
-        br
-        br
-        label.pure-radio(for='os-radio-linux')
-        input#os-radio-linux(type='radio' name='osradio' value='os-radio-linux')
-        |   Linux
-        #linuxoption.content
-          .pure-control-group 
-            .info-container 
-              .info-icon(tabindex="0" role="button" aria-label="more info") ?
-              .tooltip Private IP is used for Subnet nodes communication.
-            label() Private IP
-            input#text-private-ip(type='text' placeholder='192.168.1.1' name="text-private-ip")
-            span.pure-form-message-inline Required.
-          .pure-control-group 
-            .info-container 
-              .info-icon(tabindex="0" role="button" aria-label="more info") ?
-              .tooltip Public IP is used for accessing Subnet services, eg. Frontend.
-            label() Public IP
-            input#text-public-ip(type='text' placeholder='1.1.1.1' name="text-public-ip")
-          .pure-control-group 
-            .info-container
-              .info-icon(tabindex="0" role="button" aria-label="more info") ?
-              .tooltip The generated configs will evenly spread the nodes across the machines.
-            label() Number of Machines
-            input#text-num-machine(type='number' placeholder='1' name="text-num-machine")
-              
+          .tooltip The generated configs will evenly spread the nodes across the machines.
+        label() Number of Machines
+        input#text-num-machine(type='number' placeholder='1' name="text-num-machine" oninput="numMachineMoreThanOne()")
+
+      input#checkbox-num-machine(type='checkbox' name='checkbox-num-machine')
+        
+      //- .pure-control-group 
+      //-   .info-container 
+      //-     .info-icon(tabindex="0" role="button" aria-label="more info") ?
+      //-     .tooltip
+      //-       p - WSL is not supported yet
+      //-       p - Mac is only suitable for testing purposes
+      //-   label() Operating System
+      //-   br
+      //-   br
+      //-   label.pure-radio(for='os-radio-mac')
+      //-   input#os-radio-mac(type='radio' name='osradio' value='os-radio-mac' checked)
+      //-   |   Mac
+      //-   br
+      //-   br
+      //-   label.pure-radio(for='os-radio-linux')
+      //-   input#os-radio-linux(type='radio' name='osradio' value='os-radio-linux')
+      //-   |   Linux
+      #ipoption.content
+        .pure-control-group 
+          .info-container 
+            .info-icon(tabindex="0" role="button" aria-label="more info") ?
+            .tooltip Private IP is used for Subnet nodes communication.
+          label() Private IP
+          input#text-private-ip(type='text' placeholder='192.168.1.1' name="text-private-ip")
+          span.pure-form-message-inline Required
+        .pure-control-group 
+          .info-container 
+            .info-icon(tabindex="0" role="button" aria-label="more info") ?
+            .tooltip Public IP is used for accessing Subnet services, eg. Frontend.
+          label() Public IP
+          input#text-public-ip(type='text' placeholder='1.1.1.1' name="text-public-ip")
+                
 
 
         
@@ -293,6 +296,20 @@ script.
       }
     }
   }
+  function numMachineMoreThanOne(){
+    const num = document.getElementById("text-num-machine")
+    const hiddenbox = document.getElementById("checkbox-num-machine")
+    if (num.value > 1){
+      hiddenbox.checked = true;
+    } else {
+      hiddenbox.checked = false;
+      const text1 = document.getElementById("text-private-ip")
+      const text2 = document.getElementById("text-public-ip")
+      text1.value = ""
+      text2.value = ""
+    }
+  }
+
   function relayerLiteClicked(radio){
     const checkbox = document.getElementById("xdczero-checkbox")
     checkbox.checked = false;
@@ -309,15 +326,15 @@ script.
     const form = document.forms["myForm"]
 
     const name = form["text-subnet-name"].value;
-    const num = form["text-num-subnet"].value;
+    const num_subnet = form["text-num-subnet"].value;
     const pn_pk = form["parentnet-wallet-pk"].value;
-    if (name == "" || num == "" || pn_pk == ""){
+    if (name == "" || num_subnet == "" || pn_pk == ""){
       document.getElementById("incomplete-required-warning").innerHTML="Please fill in all required fields"
       return false
     }
 
-    const linux = form["os-radio-linux"].checked;
-    if (linux){
+    const num_machines = form["text-num-machine"].value;
+    if (num_machines > 1){
       const private_ip = form["text-private-ip"].value;
       if (private_ip == ""){
         document.getElementById("incomplete-required-warning").innerHTML="Please fill in all required fields"

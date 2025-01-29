@@ -20,7 +20,6 @@ const config = {
   relayer_mode: process.env.RELAYER_MODE || "full",
   docker_image_name:
     process.env.IMAGE_NAME || "xinfinorg/subnet-generator:latest",
-  operating_system: process.env.OS || "linux",
   version: {
     subnet: process.env.VERSION_SUBNET || "v0.3.1",
     bootnode: process.env.VERSION_BOOTNODE || "v0.3.1",
@@ -73,8 +72,8 @@ function configSanityCheck(config) {
     process.exit(1);
   }
 
-  if (config.num_machines === 0 || config.num_subnet === 0) {
-    console.log("NUM_MACHINE and NUM_SUBNET cannot be 0");
+  if (config.num_machines < 1 || config.num_subnet < 1) {
+    console.log("NUM_MACHINE and NUM_SUBNET must be 1 or more");
     process.exit(1);
   }
 
@@ -197,14 +196,6 @@ function configSanityCheck(config) {
     config.keys.subnets_addr = output_wallet;
   }
 
-  if (config.operating_system === "mac") {
-    if (config.num_machines !== 1) {
-      console.log(
-        "OS=mac requires NUM_MACHINE=1. Due to Docker network limitation, Subnets on MacOS can only communicate within its own machine. This option is intended for single machine testing environment only"
-      );
-      process.exit();
-    }
-  }
 
   if (config.zero.zero_mode == "one-directional"){
     try {

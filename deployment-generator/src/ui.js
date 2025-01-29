@@ -77,27 +77,19 @@ function callExec(command) {
 
 function genGenEnv(input){
   console.log(input)
- 
-  let os = ''
-  let content_os = ''
-  switch (input.osradio){
-    case 'os-radio-mac':
-      os = 'mac'
-      content_os += `\nMAIN_IP=127.0.0.1`
-      content_os += `\nNUM_MACHINE=1`
-      break
-    case 'os-radio-linux':
-      os = 'linux'
-      content_os += `\nMAIN_IP=${input["text-private-ip"]}`
-      if (input["text-public-ip"] != ''){
-        content_os += `\nPUBLIC_IP=${input["text-public-ip"]}`  
-      }
-      if (input["text-num-machine"] != ''){
-        content_os += `\nNUM_MACHINE=${input["text-num-machine"]}`
-      } else {
-        content_os += `\nNUM_MACHINE=1`
-      }
-      break
+
+  let content_machine = ''
+  if (input["text-num-machine"] > 1){
+    content_machine += `\nMAIN_IP=${input["text-private-ip"]}`
+    if (input["text-public-ip"] != ''){
+      content_machine += `\nPUBLIC_IP=${input["text-public-ip"]}`  
+    }
+    if (input["text-num-machine"] != ''){
+      content_machine += `\nNUM_MACHINE=${input["text-num-machine"]}`
+    }
+  } else {
+    content_machine += `\nMAIN_IP=127.0.0.1`
+    content_machine += `\nNUM_MACHINE=1`
   }
 
   let parentnet = ''
@@ -182,12 +174,11 @@ function genGenEnv(input){
   content=`
 NETWORK_NAME=${input["text-subnet-name"]}
 NUM_SUBNET=${input["text-num-subnet"]}
-OS=${os}
 PARENTNET=${parentnet}
 PARENTNET_WALLET_PK=${input["parentnet-wallet-pk"]}
 RELAYER_MODE=${relayer_mode}
 `
-  content+=content_os
+  content+=content_machine
   content+='\n'
   content+=content_custom_key
   content+='\n'

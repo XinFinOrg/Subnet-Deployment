@@ -76,10 +76,6 @@ function genCommands() {
   if (config.relayer_mode == "lite") {
     csc_mode = "lite";
   }
-  let os_extra = "";
-  if (config.operating_system == "mac"){
-    os_extra = " --network generated_docker_net "
-  }
   let commands = "";
   commands += "Start under generated/ directory\n";
   commands += "\n1. Deploy Subnet nodes\n";
@@ -100,7 +96,7 @@ function genCommands() {
   commands += "  ./scripts/check-mining.sh\n";
   commands += "\n3. Deploy Checkpoint Smart Contract (CSC)\n";
   commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
-  commands += `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/csc:${config.version.csc} ${csc_mode}\n`;
+  commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/csc:${config.version.csc} ${csc_mode}\n`;
   commands += "\n4. Add CSC configuration to common.env\n";
   commands += "  - copy step 3. output CHECKPOINT_CONTRACT to common.env\n";
   commands += "\n5. Start services (relayer, backend, frontend)\n";
@@ -120,17 +116,17 @@ function genCommands() {
       "  - copy CHECKPOINT_CONTRACT from common.env to and rename it to REVERSE_CSC in contract_deploy.env\n";
     commands += "\n2. Deploy XDC-Zero\n";
     commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-    commands += `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
+    commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
     if (config.zero.subswap == "true") {
       commands += "  \n  Deploy Subswap and Register Application to XDC-Zero\n";
       commands +=
         "  - copy SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to contract_deploy.env\n";
       commands +=
-        `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/xdc-zero:v0.1.0 subswap\n`;
+        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 subswap\n`;
       commands +=
         "  - copy SUBNET_APP and PARENTNET_APP to contract_deploy.env\n";
       commands +=
-        `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
+        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
     }
     commands += "\n3. Add XDC-Zero Configuration to common.env\n";
     commands +=
@@ -148,7 +144,7 @@ function genCommands() {
     commands += "\n\nDeploy XDC-Zero crosschain framework (bi-directional)\n";
     commands += "\n1. Deploy Reverse Checkpoint Smart Contract (Reverse CSC)\n";
     commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
-    commands += `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/csc:${config.version.csc} reversefull\n`;
+    commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/csc:${config.version.csc} reversefull\n`;
     commands += "\n2. Add CSC and Reverse CSC configuration\n";
     commands +=
       "  - copy previous step output REVERSE_CHECKPOINT_CONTRACT to common.env\n";
@@ -158,18 +154,18 @@ function genCommands() {
       "  - copy CHECKPOINT_CONTRACT from common.env and rename it to CSC in contract_deploy.env\n";
     commands += "\n3. Deploy XDC-Zero\n";
     commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-    commands += `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
+    commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
     if (config.zero.subswap) {
       commands +=
         "  \n  Deploy Subswap and Register Application to XDC-Zero\n";
       commands +=
         "  - copy SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to contract_deploy.env\n";
       commands +=
-        `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/xdc-zero:v0.1.0 subswap\n`;
+        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 subswap\n`;
       commands +=
         "  - copy SUBNET_APP and PARENTNET_APP to contract_deploy.env\n";
       commands +=
-        `  docker run --env-file contract_deploy.env ${os_extra} xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
+        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
     }
     commands += "\n4. Add XDC-Zero Configuration to common.env\n";
     commands +=
