@@ -70,8 +70,6 @@ function genDeploymentJson(keys) {
 // }
 
 function genCommands() {
-  const conf_path = __dirname + "/config/";
-  const set_env = "SUBNET_CONFIG_PATH=" + conf_path;
   let csc_mode = "full";
   if (config.relayer_mode == "lite") {
     csc_mode = "lite";
@@ -86,10 +84,10 @@ function genCommands() {
         machine_name + `:                deploy subnet on machine${i}\n`;
     }
     if (i !== 1) {
-      commands += `  Prerequisite: copy docker-compose.yml,docker-compose.env,config/subnetX.env to ${machine_name}. Make sure docker-compose.env points to subnetX.env directory.\n`;
+      commands += `  Prerequisite: copy docker-compose.yml, genesis.json, config/subnetX.env to ${machine_name}.\n`;
     }
-    commands += `  docker compose --env-file docker-compose.env --profile ${machine_name} pull\n`;
-    commands += `  docker compose --env-file docker-compose.env --profile ${machine_name} up -d\n\n`;
+    commands += `  docker compose --profile ${machine_name} pull\n`;
+    commands += `  docker compose --profile ${machine_name} up -d\n\n`;
   }
   commands +=
     "\n2. After 60 seconds, confirm the Subnet is running correctly\n";
@@ -100,8 +98,8 @@ function genCommands() {
   commands += "\n4. Add CSC configuration to common.env\n";
   commands += "  - copy step 3. output CHECKPOINT_CONTRACT to common.env\n";
   commands += "\n5. Start services (relayer, backend, frontend)\n";
-  commands += `  docker compose --env-file docker-compose.env --profile services pull\n`;
-  commands += `  docker compose --env-file docker-compose.env --profile services up -d\n`;
+  commands += `  docker compose --profile services pull\n`;
+  commands += `  docker compose --profile services up -d\n`;
   commands += "\n6. Confirm Subnet services through browser UI\n";
   commands += `  Frontend: http://${config.public_ip}:5214\n`;
   commands += `  Relayer: http://${config.public_ip}:5215\n`;
@@ -134,8 +132,8 @@ function genCommands() {
     commands +=
       "  - Add PARENTNET_ZERO_WALLET_PK to common.env, this should be different from PARENTNET_WALLET_PK\n";
     commands += "\n4. Restart Relayer\n";
-    commands += `  docker compose --env-file docker-compose.env --profile services down\n`;
-    commands += `  docker compose --env-file docker-compose.env --profile services up -d\n`;
+    commands += `  docker compose --profile services down\n`;
+    commands += `  docker compose --profile services up -d\n`;
     commands += "\n5. Confirm Relayer is running  \n";
     commands += `  Relayer: http://${config.public_ip}:5215\n`;
     commands += `  Frontend: http://${config.public_ip}:5214\n`;
@@ -179,8 +177,8 @@ function genCommands() {
     commands += "  - check keys.json for the Grandmaster Key as the source wallet\n"
     commands += "  - for the destination wallet you should use the public address of SUBNET_WALLET_PK and SUBNET_ZERO_WALLET_PK\n"
     commands += "\n6. Restart Relayer\n";
-    commands += `  docker compose --env-file docker-compose.env --profile services down\n`;
-    commands += `  docker compose --env-file docker-compose.env --profile services up -d\n`;
+    commands += `  docker compose --profile services down\n`;
+    commands += `  docker compose --profile services up -d\n`;
     commands += "\n7. Confirm Relayer is running  \n";
     commands += `  Relayer: http://${config.public_ip}:5215\n`;
     commands += `  Frontend: http://${config.public_ip}:5214\n`;

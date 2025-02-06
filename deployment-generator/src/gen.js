@@ -68,7 +68,6 @@ for (let i = 1; i <= config.num_subnet; i++) {
 deployconf = gen_env.genContractDeployEnv();
 
 const compose_content = yaml.dump(doc, {});
-const compose_conf = gen_compose.genComposeEnv();
 
 // deployment commands list
 const commands = gen_other.genCommands();
@@ -141,13 +140,6 @@ function writeGenerated(output_dir) {
       }
     );
   }
-
-  fs.writeFileSync(`${output_dir}/docker-compose.env`, compose_conf, (err) => {
-    if (err) {
-      console.error(err);
-      exit();
-    }
-  });
 
   deployment_json = JSON.stringify(deployment_json, null, 2);
   fs.writeFileSync(

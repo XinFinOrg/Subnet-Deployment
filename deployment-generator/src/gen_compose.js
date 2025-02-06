@@ -6,7 +6,6 @@ module.exports = {
   genSubnetNodes,
   genBootNode,
   genServices,
-  genComposeEnv,
   injectNetworkConfig,
 };
 
@@ -15,7 +14,7 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
   for (let i = start_num; i < start_num + num; i++) {
     const node_name = "subnet" + i.toString();
     const volume = "./xdcchain" + i.toString() + ":/work/xdcchain";
-    const config_path = "${SUBNET_CONFIG_PATH}/subnet" + i.toString() + ".env";
+    const config_path = "${PWD}/subnet" + i.toString() + ".env";
     const compose_profile = "machine" + machine_id.toString();
     const port = 20302 + i;
     const rpcport = 8544 + i;
@@ -24,7 +23,7 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
       image: `xinfinorg/xdcsubnets:${config.version.subnet}`,
       volumes: [
         volume,
-        "${SUBNET_CONFIG_PATH}/genesis.json:/work/genesis.json",
+        "${PWD}/genesis.json:/work/genesis.json",
       ],
       restart: "always",
       network_mode: "host",
@@ -44,7 +43,7 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
 }
 
 function genBootNode(machine_id) {
-  let config_path = "${SUBNET_CONFIG_PATH}/common.env";
+  let config_path = "${PWD}/common.env";
   const machine = "machine" + machine_id.toString();
   const bootnode = {
     image: `xinfinorg/xdcsubnets:${config.version.bootnode}`,
@@ -60,7 +59,7 @@ function genBootNode(machine_id) {
 }
 
 function genServices(machine_id) {
-  const config_path = "${SUBNET_CONFIG_PATH}/common.env";
+  const config_path = "${PWD}/common.env";
   const machine = "services";
   const frontend = {
     image: `xinfinorg/subnet-frontend:${config.version.frontend}`,
@@ -97,12 +96,6 @@ function genServices(machine_id) {
   };
 
   return services;
-}
-
-function genComposeEnv() {
-  // conf_path = `SUBNET_CONFIG_PATH=${config.deployment_path}/generated/`;
-  conf_path = `SUBNET_CONFIG_PATH=$PWD`
-  return conf_path;
 }
 
 function injectNetworkConfig(compose_object) {

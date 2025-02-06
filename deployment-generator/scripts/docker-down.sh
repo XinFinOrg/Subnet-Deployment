@@ -12,5 +12,5 @@ if [[ -z $1 ]]; then
   exit
 fi
 
-docker compose --env-file ../docker-compose.env --profile $1 down
+docker compose --profile $1 down
 
