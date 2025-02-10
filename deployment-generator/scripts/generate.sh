@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION_GENERATOR="v1.0.1"
+VERSION_GENERATOR="v1.1.0"
 VERSION_GENESIS="v0.3.1"
 
 current_dir="$(cd "$(dirname "$0")" && pwd)"

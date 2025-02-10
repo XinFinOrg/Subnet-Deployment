@@ -65,7 +65,7 @@ subnetconf = [];
 for (let i = 1; i <= config.num_subnet; i++) {
   subnetconf.push(gen_env.genSubnetConfig(i, keys, ip_record));
 }
-deployconf = gen_env.genContractDeployEnv();
+deployconf = gen_env.genContractDeployEnv(ip_record);
 
 const compose_content = yaml.dump(doc, {});
 
