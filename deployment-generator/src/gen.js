@@ -56,16 +56,31 @@ Object.entries(subnet_services).forEach((entry) => {
   const [key, value] = entry;
   doc["services"][key] = value;
 });
+
+const subswap_compose = gen_compose.genSubswapFrontend();
+Object.entries(subswap_compose).forEach((entry) => {
+  const [key, value] = entry;
+  doc["services"][key] = value;
+});
+
+const explorer_compose = gen_compose.genExplorer();
+Object.entries(explorer_compose).forEach((entry) => {
+  const [key, value] = entry;
+  doc["services"][key] = value;
+});
+
+
 // checkpoint smartcontract deployment config
 let deployment_json = gen_other.genDeploymentJson(keys);
 
 doc, ip_record = gen_compose.injectNetworkConfig(doc);
-commonconf = gen_env.genServicesConfig(ip_record);
+const commonconf = gen_env.genServicesConfig(ip_record);
 subnetconf = [];
 for (let i = 1; i <= config.num_subnet; i++) {
   subnetconf.push(gen_env.genSubnetConfig(i, keys, ip_record));
 }
-deployconf = gen_env.genContractDeployEnv(ip_record);
+const deployconf = gen_env.genContractDeployEnv(ip_record);
+
 
 const compose_content = yaml.dump(doc, {});
 

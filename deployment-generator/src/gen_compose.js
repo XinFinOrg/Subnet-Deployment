@@ -7,6 +7,8 @@ module.exports = {
   genBootNode,
   genServices,
   injectNetworkConfig,
+  genSubswapFrontend,
+  genExplorer,
 };
 
 function genSubnetNodes(machine_id, num, start_num = 1) {
@@ -96,6 +98,34 @@ function genServices(machine_id) {
   };
 
   return services;
+}
+
+function genSubswapFrontend(){
+  const subswap_frontend = {
+    image: `xinfinorg/subswap-frontend:${config.version.subswap_frontend}`,
+    restart: "always",
+    volumes: ["${PWD}/subswap-frontend.config.json:/app/subswap-frontend.config.json"],
+    ports: ["5216:5216"],
+    profiles: ["subswap"],
+  }
+  const subswap = {
+    subswap_frontend
+  }
+  return subswap
+}
+
+function genExplorer(){
+  const explorer_db = {
+  }
+  const explorer_ui = {}
+  const explorer_indexer = {}
+
+  const explorer = {
+    // db: explorer_db,
+    // ui: explorer_ui,
+    // idx: explorer_indexer,
+  }
+  return explorer
 }
 
 function injectNetworkConfig(compose_object) {
