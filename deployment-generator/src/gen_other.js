@@ -94,99 +94,113 @@ function genCommands() {
   commands += "  ./scripts/check-mining.sh\n";
   commands += "\n3. Deploy Checkpoint Smart Contract (CSC)\n";
   commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
-  commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/csc:${config.version.csc} ${csc_mode}\n`;
-  commands += "\n4. Add CSC configuration to common.env\n";
-  commands += "  - copy step 3. output CHECKPOINT_CONTRACT to common.env\n";
-  commands += "\n5. Start services (relayer, backend, frontend)\n";
+  // commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/csc:${config.version.csc} ${csc_mode}\n`;
+  // commands += "\n4. Add CSC configuration to common.env\n";
+  // commands += "  - copy step 3. output CHECKPOINT_CONTRACT to common.env\n";
+  commands += `  docker run -v ./:app/mount/ --network generated_docker_net xinfinorg/csc:${config.version.csc} ${csc_mode}\n`
+  commands += "\n4. Start services (relayer, backend, frontend)\n";
   commands += `  docker compose --profile services pull\n`;
   commands += `  docker compose --profile services up -d\n`;
-  commands += "\n6. Confirm Subnet services through browser UI\n";
+  commands += "\n5. Confirm Subnet services through browser UI\n";
   commands += `  Frontend: http://${config.public_ip}:5214\n`;
   commands += `  Relayer: http://${config.public_ip}:5215\n`;
 
-  if (config.zero.zero_mode == "") {
+  if (config.zero.zero_mode == ""){
+
   } else if (config.zero.zero_mode == "one-directional") {
-    commands += "\n\nDeploy XDC-Zero crosschain framework (one-directional)\n";
-    commands += "\n1. Add CSC configuration to contract_deploy.env\n";
-    commands +=
-      "  - copy CHECKPOINT_CONTRACT from common.env to and rename it to CSC in contract_deploy.env\n";
-    commands +=
-      "  - copy CHECKPOINT_CONTRACT from common.env to and rename it to REVERSE_CSC in contract_deploy.env\n";
-    commands += "\n2. Deploy XDC-Zero\n";
-    commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-    commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
-    if (config.zero.subswap == "true") {
-      commands += "  \n  Deploy Subswap and Register Application to XDC-Zero\n";
-      commands +=
-        "  - copy SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to contract_deploy.env\n";
-      commands +=
-        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 subswap\n`;
-      commands +=
-        "  - copy SUBNET_APP and PARENTNET_APP to contract_deploy.env\n";
-      commands +=
-        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
-    }
-    commands += "\n3. Add XDC-Zero Configuration to common.env\n";
-    commands +=
-      "  - copy step 2. output SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to common.env\n";
-    commands +=
-      "  - Add PARENTNET_ZERO_WALLET_PK to common.env, this should be different from PARENTNET_WALLET_PK\n";
-    commands += "\n4. Restart Relayer\n";
-    commands += `  docker compose --profile services down\n`;
-    commands += `  docker compose --profile services up -d\n`;
-    commands += "\n5. Confirm Relayer is running  \n";
-    commands += `  Relayer: http://${config.public_ip}:5215\n`;
-    commands += `  Frontend: http://${config.public_ip}:5214\n`;
 
   } else if (config.zero.zero_mode == "bi-directional") {
-    commands += "\n\nDeploy XDC-Zero crosschain framework (bi-directional)\n";
-    commands += "\n1. Deploy Reverse Checkpoint Smart Contract (Reverse CSC)\n";
-    commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
-    commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/csc:${config.version.csc} reversefull\n`;
-    commands += "\n2. Add CSC and Reverse CSC configuration\n";
-    commands +=
-      "  - copy previous step output REVERSE_CHECKPOINT_CONTRACT to common.env\n";
-    commands +=
-      "  - copy REVERSE_CHECKPOINT_CONTRACT from common.env and rename it to REVERSE_CSC in contract_deploy.env\n";
-    commands +=
-      "  - copy CHECKPOINT_CONTRACT from common.env and rename it to CSC in contract_deploy.env\n";
-    commands += "\n3. Deploy XDC-Zero\n";
-    commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-    commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
-    if (config.zero.subswap) {
-      commands +=
-        "  \n  Deploy Subswap and Register Application to XDC-Zero\n";
-      commands +=
-        "  - copy SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to contract_deploy.env\n";
-      commands +=
-        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 subswap\n`;
-      commands +=
-        "  - copy SUBNET_APP and PARENTNET_APP to contract_deploy.env\n";
-      commands +=
-        `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
-    }
-    commands += "\n4. Add XDC-Zero Configuration to common.env\n";
-    commands +=
-      "  - copy step 3. output SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to common.env\n";
-    commands +=
-      "  - Add SUBNET_WALLET_PK and SUBNET_ZERO_WALLET_PK to common.env, they should be different from each other\n";
-    commands +=
-      "  - Add PARENTNET_ZERO_WALLET_PK to common.env, this should be different from PARENTNET_WALLET_PK\n";
-    commands += "\n5. Transfer Subnet tokens to SUBNET_WALLET_PK and SUBNET_ZERO_WALLET_PK\n";
-    commands += "  ./scripts/faucet.sh\n"
-    commands += "  - check keys.json for the Grandmaster Key as the source wallet\n"
-    commands += "  - for the destination wallet you should use the public address of SUBNET_WALLET_PK and SUBNET_ZERO_WALLET_PK\n"
-    commands += "\n6. Restart Relayer\n";
-    commands += `  docker compose --profile services down\n`;
-    commands += `  docker compose --profile services up -d\n`;
-    commands += "\n7. Confirm Relayer is running  \n";
-    commands += `  Relayer: http://${config.public_ip}:5215\n`;
-    commands += `  Frontend: http://${config.public_ip}:5214\n`;
+
   } else {
-    console.log("Error: Invalid XDC-Zero mode");
+    console.log("Error: Invalid XDC-Zero mode")
     exit();
   }
 
+  // if (config.zero.zero_mode == "") {
+  // } else if (config.zero.zero_mode == "one-directional") {
+  //   commands += "\n\nDeploy XDC-Zero crosschain framework (one-directional)\n";
+  //   commands += "\n1. Add CSC configuration to contract_deploy.env\n";
+  //   commands +=
+  //     "  - copy CHECKPOINT_CONTRACT from common.env to and rename it to CSC in contract_deploy.env\n";
+  //   commands +=
+  //     "  - copy CHECKPOINT_CONTRACT from common.env to and rename it to REVERSE_CSC in contract_deploy.env\n";
+  //   commands += "\n2. Deploy XDC-Zero\n";
+  //   commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
+  //   commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
+  //   if (config.zero.subswap == "true") {
+  //     commands += "  \n  Deploy Subswap and Register Application to XDC-Zero\n";
+  //     commands +=
+  //       "  - copy SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to contract_deploy.env\n";
+  //     commands +=
+  //       `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 subswap\n`;
+  //     commands +=
+  //       "  - copy SUBNET_APP and PARENTNET_APP to contract_deploy.env\n";
+  //     commands +=
+  //       `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
+  //   }
+  //   commands += "\n3. Add XDC-Zero Configuration to common.env\n";
+  //   commands +=
+  //     "  - copy step 2. output SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to common.env\n";
+  //   commands +=
+  //     "  - Add PARENTNET_ZERO_WALLET_PK to common.env, this should be different from PARENTNET_WALLET_PK\n";
+  //   commands += "\n4. Restart Relayer\n";
+  //   commands += `  docker compose --profile services down\n`;
+  //   commands += `  docker compose --profile services up -d\n`;
+  //   commands += "\n5. Confirm Relayer is running  \n";
+  //   commands += `  Relayer: http://${config.public_ip}:5215\n`;
+  //   commands += `  Frontend: http://${config.public_ip}:5214\n`;
+
+  // } else if (config.zero.zero_mode == "bi-directional") {
+  //   commands += "\n\nDeploy XDC-Zero crosschain framework (bi-directional)\n";
+  //   commands += "\n1. Deploy Reverse Checkpoint Smart Contract (Reverse CSC)\n";
+  //   commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
+  //   commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/csc:${config.version.csc} reversefull\n`;
+  //   commands += "\n2. Add CSC and Reverse CSC configuration\n";
+  //   commands +=
+  //     "  - copy previous step output REVERSE_CHECKPOINT_CONTRACT to common.env\n";
+  //   commands +=
+  //     "  - copy REVERSE_CHECKPOINT_CONTRACT from common.env and rename it to REVERSE_CSC in contract_deploy.env\n";
+  //   commands +=
+  //     "  - copy CHECKPOINT_CONTRACT from common.env and rename it to CSC in contract_deploy.env\n";
+  //   commands += "\n3. Deploy XDC-Zero\n";
+  //   commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
+  //   commands += `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
+  //   if (config.zero.subswap) {
+  //     commands +=
+  //       "  \n  Deploy Subswap and Register Application to XDC-Zero\n";
+  //     commands +=
+  //       "  - copy SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to contract_deploy.env\n";
+  //     commands +=
+  //       `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 subswap\n`;
+  //     commands +=
+  //       "  - copy SUBNET_APP and PARENTNET_APP to contract_deploy.env\n";
+  //     commands +=
+  //       `  docker run --env-file contract_deploy.env --network generated_docker_net xinfinorg/xdc-zero:v0.1.0 applicationregister\n`;
+  //   }
+  //   commands += "\n4. Add XDC-Zero Configuration to common.env\n";
+  //   commands +=
+  //     "  - copy step 3. output SUBNET_ZERO_CONTRACT and PARENTNET_ZERO_CONTRACT to common.env\n";
+  //   commands +=
+  //     "  - Add SUBNET_WALLET_PK and SUBNET_ZERO_WALLET_PK to common.env, they should be different from each other\n";
+  //   commands +=
+  //     "  - Add PARENTNET_ZERO_WALLET_PK to common.env, this should be different from PARENTNET_WALLET_PK\n";
+  //   commands += "\n5. Transfer Subnet tokens to SUBNET_WALLET_PK and SUBNET_ZERO_WALLET_PK\n";
+  //   commands += "  ./scripts/faucet.sh\n"
+  //   commands += "  - check keys.json for the Grandmaster Key as the source wallet\n"
+  //   commands += "  - for the destination wallet you should use the public address of SUBNET_WALLET_PK and SUBNET_ZERO_WALLET_PK\n"
+  //   commands += "\n6. Restart Relayer\n";
+  //   commands += `  docker compose --profile services down\n`;
+  //   commands += `  docker compose --profile services up -d\n`;
+  //   commands += "\n7. Confirm Relayer is running  \n";
+  //   commands += `  Relayer: http://${config.public_ip}:5215\n`;
+  //   commands += `  Frontend: http://${config.public_ip}:5214\n`;
+  // } else {
+  //   console.log("Error: Invalid XDC-Zero mode");
+  //   exit();
+  // }
+
+
+  
   return commands;
 }
 
