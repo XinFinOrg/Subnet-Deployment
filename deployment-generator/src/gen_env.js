@@ -62,25 +62,19 @@ VITE_SUBNET_RPC=http://${config.public_ip}:8545
 STATS_SECRET=${config.secret_string}
 
 # CSC
-CHECKPOINT_CONTRACT=0x0000000000000000000000000000000000000000
 PARENTNET_WALLET_PK=${config.parentnet.privatekey}
 
 `;
 
 if (config.zero.zero_mode == 'one-directional'){
   config_env += `
-# # XDC-ZERO. It's optional. Don't uncomment it if not planning to enable it
-# SUBNET_ZERO_CONTRACT=0x0000000000000000000000000000000000000000
-# PARENTNET_ZERO_CONTRACT=0x0000000000000000000000000000000000000000
-# PARENTNET_ZERO_WALLET_PK=${config.zero.parentnet_zero_wallet_pk}
+# XDC-ZERO
+PARENTNET_ZERO_WALLET_PK=${config.zero.parentnet_zero_wallet_pk}
   `
 
 } else if (config.zero.zero_mode == 'bi-directional'){
   config_env += `
-# XDC-ZERO. It's optional. Don't uncomment it if not planning to enable it
-REVERSE_CHECKPOINT_CONTRACT=0x0000000000000000000000000000000000000000
-SUBNET_ZERO_CONTRACT=0x0000000000000000000000000000000000000000
-PARENTNET_ZERO_CONTRACT=0x0000000000000000000000000000000000000000
+# XDC-ZERO
 PARENTNET_ZERO_WALLET_PK=${config.zero.parentnet_zero_wallet_pk}
 SUBNET_WALLET_PK=${config.zero.subnet_wallet_pk}
 SUBNET_ZERO_WALLET_PK=${config.zero.subnet_zero_wallet_pk}
@@ -99,12 +93,8 @@ function genContractDeployEnv(ip_record) {
 PARENTNET_URL=${config.parentnet.url}
 SUBNET_URL=http://${subnet_ip}:8545
 
-
 PARENTNET_PK=${config.parentnet.privatekey}
 SUBNET_PK=${config.keys.grandmaster_pk}
-
-CHECKPOINT_CONTRACT=0x0000000000000000000000000000000000000000
-REVERSE_CHECKPOINT_CONTRACT=0x0000000000000000000000000000000000000000
 
 `;
   return config_deploy;
