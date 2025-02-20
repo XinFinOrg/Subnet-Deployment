@@ -106,8 +106,9 @@ function genCommands() {
       commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
       commands += '  docker run -v ${PWD}/:/app/cicd/mount/' + ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} zeroandsubswap\n`
       commands += "\n7. Run Subswap Frontend\n";
-      commands += `  docker compose --profile subswap_frontend pull\n`;
-      commands += `  docker compose --profile subswap_frontend up -d\n`;
+      commands += `  docker compose --profile subswap pull\n`;
+      commands += `  docker compose --profile subswap up -d\n`;
+      commands += "\n8. Confirm Subswap UI\n"
       commands += `  Subswap-Frontend: http://${config.public_ip}:5216\n`;
     } else {
       commands += '\n6. Deploy XDC-Zero\n'
@@ -128,6 +129,7 @@ function genCommands() {
       commands += "\n8. Run Subswap Frontend\n";
       commands += `  docker compose --profile subswap_frontend pull\n`;
       commands += `  docker compose --profile subswap_frontend up -d\n`;
+      commands += "\n9. Confirm Subswap UI\n"
       commands += `  Subswap-Frontend: http://${config.public_ip}:5216\n`;
     } else {
       commands += '\n7. Deploy XDC-Zero\n'
