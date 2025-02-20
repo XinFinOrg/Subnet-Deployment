@@ -71,8 +71,6 @@ Object.entries(explorer_compose).forEach((entry) => {
 
 
 // checkpoint smartcontract deployment config
-let deployment_json = gen_other.genDeploymentJson(keys);
-
 doc, ip_record = gen_compose.injectNetworkConfig(doc);
 const commonconf = gen_env.genServicesConfig(ip_record);
 subnetconf = [];
@@ -156,17 +154,6 @@ function writeGenerated(output_dir) {
     );
   }
 
-  deployment_json = JSON.stringify(deployment_json, null, 2);
-  fs.writeFileSync(
-    `${output_dir}/deployment.config.json`,
-    deployment_json,
-    (err) => {
-      if (err) {
-        console.error("Error writing file:", err);
-        exit();
-      }
-    }
-  );
 
   fs.writeFileSync(
     `${output_dir}/genesis_input.yml`,
