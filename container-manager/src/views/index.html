@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Buttons</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+      <h1>API Control Buttons</h1>
+      <button class="button" onclick="callApi('/state')">Get State</button>
+      <button class="button" onclick="callApi('/start_subnet')">Start Subnet</button>
+      <button class="button" onclick="callApi('/deploy_csc')">Deploy CSC</button>
+      <button class="button" onclick="callApi('/start_services')">Start Services</button>
+      <div>
+        <button class="button red" onclick="callApi('/stop_all')">Stop All Containers</button>
+      </div>
+      <!-- Output container for API response -->
+      <div id="output">API response will appear here...</div>
+    </div>
+
+    <!-- Link to the external JavaScript file -->
+    <script src="script.js"></script>
+</body>
+</html>
