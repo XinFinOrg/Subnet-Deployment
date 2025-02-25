@@ -5,6 +5,7 @@ keys.json
 node_modules
 package-lock.json
 generated
+mount
 *.env*
 **temp
 *key*

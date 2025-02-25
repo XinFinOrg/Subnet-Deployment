@@ -15,8 +15,8 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
   let subnet_nodes = {};
   for (let i = start_num; i < start_num + num; i++) {
     const node_name = "subnet" + i.toString();
-    const volume = "./xdcchain" + i.toString() + ":/work/xdcchain";
-    const config_path = "${PWD}/subnet" + i.toString() + ".env";
+    const volume = "${PWD}/xdcchain" + i.toString() + ":/work/xdcchain";
+    const config_path = "subnet" + i.toString() + ".env";
     const compose_profile = "machine" + machine_id.toString();
     const port = 20302 + i;
     const rpcport = 8544 + i;
@@ -45,13 +45,13 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
 }
 
 function genBootNode(machine_id) {
-  let config_path = "${PWD}/common.env";
+  let config_path = "common.env";
   const machine = "machine" + machine_id.toString();
   const bootnode = {
     image: `xinfinorg/xdcsubnets:${config.version.bootnode}`,
     restart: "always",
     env_file: config_path,
-    volumes: ["./bootnodes:/work/bootnodes"],
+    volumes: ["${PWD}/bootnodes:/work/bootnodes"],
     entrypoint: ["bash", "/work/start-bootnode.sh"],
     command: ["-verbosity", "6", "-nodekey", "bootnode.key"],
     ports: ["20301:20301/tcp", "20301:20301/udp"],
@@ -61,13 +61,14 @@ function genBootNode(machine_id) {
 }
 
 function genServices(machine_id) {
-  const config_path = "${PWD}/common.env";
+  const config_path = "common.env";
   const machine = "services";
+  const volume_path = '${PWD}'+'/'+config_path
   const frontend = {
     image: `xinfinorg/subnet-frontend:${config.version.frontend}`,
     restart: "always",
     env_file: config_path, // not used directly (injected via volume) but required to trigger restart if common.env changes
-    volumes: [`${config_path}:/app/.env.local`],
+    volumes: [`${volume_path}:/app/.env.local`],
     ports: ["5214:5214"],
     profiles: [machine],
   };
@@ -82,7 +83,7 @@ function genServices(machine_id) {
     image: `xinfinorg/subnet-stats-service:${config.version.stats}`,
     restart: "always",
     env_file: config_path,
-    volumes: ["./stats-service/logs:/app/logs"],
+    volumes: ["${PWD}/stats-service/logs:/app/logs"],
     ports: ["5213:5213"],
     profiles: [machine],
   };
