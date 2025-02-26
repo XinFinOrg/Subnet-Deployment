@@ -16,11 +16,13 @@
       <div>
         <button class="button red" onclick="callApi('/stop_all')">Stop All Containers</button>
       </div>
-      <!-- Output container for API response -->
+      <div>
+        <button class="button" onclick="callStreamApi('/events')">Test Events</button>
+        <button class="button" onclick="callStreamApi('/stream')">Test Stream</button>
+      </div>
       <div id="output">API response will appear here...</div>
     </div>
 
-    <!-- Link to the external JavaScript file -->
     <script src="script.js"></script>
 </body>
 </html>

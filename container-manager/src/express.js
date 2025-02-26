@@ -1,58 +1,97 @@
-const docker = require("./docker");
-docker.initModule()
-const express = require('express');
+const state = require("./libs/state");
+const exec = require("./libs/exec");
 const path = require('path'); 
+const express = require('express');
 const app = express();
 const PORT = 3000;
 
-// Serve static files (like CSS or JS) from a "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('json spaces', 2)
 
-// Route to serve the HTML file
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
-app.get('/test', async (req, res) => {
-  const test = await docker.testAxios()
-  res.send(JSON.stringify(test, null, 2))
-})
-
 app.get('/state', async (req, res) => {
-  const state = await docker.getContainersState()
-  res.send(JSON.stringify(state, null, 2))
+  const response = await state.getContainersState()
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(response, null, 2))
 })
 
 app.get('/start_subnet', async (req, res) => {
-  await docker.startComposeProfile('machine1')
-  const state = await docker.getContainersState()
-  res.send(JSON.stringify(state, null, 2))
+  await exec.startComposeProfile('machine1')
+  const response = await docker.getContainersState()
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(response, null, 2))
 })
 
+app.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  let counter = 0;
+  const interval = setInterval(() => {
+      counter++;
+      res.write(`data: Event ${counter}\n\n`);
+      if (counter >= 5) {
+          clearInterval(interval);
+          res.write('event: close\ndata: Connection closed by server\n\n');
+          res.end();
+      }
+  }, 1000);
+
+  // Handle client disconnect
+  req.on('close', () => {
+    clearInterval(interval);
+    res.end();
+  });
+});
+
+app.get('/stream', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  await exec.executeTest('', (data) => {
+    res.write(`data:${data}\n\n`);
+  }, ()=>{
+    res.write('event: close\ndata: Connection closed by server\n\n');
+    res.end();
+  })
+
+
+  // Handle client disconnect
+  req.on('close', () => {
+    res.end();
+  });
+});
+
 app.get('/deploy_csc', async (req, res) => {
-  docker.deployContract('csc')
-  const state = await docker.getContainersState()
-  res.send(JSON.stringify(state, null, 2))
+  exec.deployContract('csc')
+  const response = await docker.getContainersState()
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(response, null, 2))
 })
 
 app.get('/start_services', async (req, res) => {
-  docker.startComposeProfile('services')
-  const state = await docker.getContainersState()
-  res.send(JSON.stringify(state, null, 2))
+  exec.startComposeProfile('services')
+  const response = await docker.getContainersState()
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(response, null, 2))
 })
 
 app.get('/stop_all', async (req, res) => {
-  docker.stopComposeProfile('machine1')
-  docker.stopComposeProfile('services')
-  const state = await docker.getContainersState()
-  res.send(JSON.stringify(state, null, 2))
+  exec.stopComposeProfile('machine1')
+  exec.stopComposeProfile('services')
+  const response = await docker.getContainersState()
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(response, null, 2))
 })
+
 // app.get('/generate', async (req, res) => {
 //   res.send(JSON.stringify(state, null, 2))
 // })
 
-// Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
