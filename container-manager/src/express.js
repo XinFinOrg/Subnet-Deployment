@@ -13,6 +13,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/test", async (req, res) => {
+  console.log("/test called");
   const response = await state.checkMining();
   console.log(response);
   res.setHeader("Content-Type", "application/json");
@@ -20,15 +21,8 @@ app.get("/test", async (req, res) => {
 });
 
 app.get("/state", async (req, res) => {
-  // const response = await state.getContainersState()
+  console.log("/state called");
   const response = await state.getSubnetContainers();
-  res.setHeader("Content-Type", "application/json");
-  res.send(JSON.stringify(response, null, 2));
-});
-
-app.get("/start_subnet", async (req, res) => {
-  await exec.startComposeProfile("machine1");
-  const response = await docker.getContainersState();
   res.setHeader("Content-Type", "application/json");
   res.send(JSON.stringify(response, null, 2));
 });
@@ -60,16 +54,25 @@ app.get("/stream", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  await exec.executeTest(
-    "",
-    (data) => {
-      res.write(`data:${data}\n\n`);
-    },
-    () => {
-      res.write("event: close\ndata: Connection closed by server\n\n");
-      res.end();
-    }
-  );
+  const dataCallback = (data) => {
+    res.write(`data:${data}\n\n`);
+  };
+
+  const doneCallback = () => {
+    res.write("event: close\ndata: Connection closed by server\n\n");
+    res.end();
+  };
+  await exec.executeTest("", dataCallback, doneCallback);
+  // await exec.executeTest(
+  //   "",
+  //   (data) => {
+  //     res.write(`data:${data}\n\n`);
+  //   },
+  //   () => {
+  //     res.write("event: close\ndata: Connection closed by server\n\n");
+  //     res.end();
+  //   }
+  // );
 
   // Handle client disconnect
   req.on("close", () => {
@@ -77,9 +80,16 @@ app.get("/stream", async (req, res) => {
   });
 });
 
+app.get("/start_subnet", async (req, res) => {
+  console.log("/start_subnet called");
+  const response = await exec.startComposeProfile("machine1");
+  res.setHeader("Content-Type", "application/json");
+  res.send(JSON.stringify(response, null, 2));
+});
+
 app.get("/deploy_csc", async (req, res) => {
-  exec.deployContract("csc");
-  const response = await docker.getContainersState();
+  console.log("/deploy_csc called");
+  const response = await exec.deployContract("csc");
   res.setHeader("Content-Type", "application/json");
   res.send(JSON.stringify(response, null, 2));
 });

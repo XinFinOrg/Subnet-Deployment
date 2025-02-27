@@ -32,7 +32,7 @@ num_per_machine.reverse(); // let first machines host services, put fewer subnet
 
 // gen docker-compose
 let doc = {
-  version: "3.7",
+  // version: "3.7",      //docker deprecated attribute
   services: {},
 };
 

@@ -3,9 +3,9 @@ const fs = require("fs");
 const yaml = require("js-yaml");
 const path = require("path");
 const mountPath = path.join(__dirname, "../../mount/generated/");
-console.log(mountPath);
-
 const config = {};
+
+module.exports = config;
 
 initModule();
 
@@ -15,6 +15,11 @@ function initModule() {
     throw Error(`Incomplete mount, did not find: ${name}`);
   }
   config["compose"] = getComposeCommand();
+
+  config["hostPath"] = process.env.HOSTPWD || "";
+  if (config["hostPath"] === "") {
+    throw Error("Incomplete container start, did not find env: HOSTPWD");
+  }
 }
 
 function checkFiles() {

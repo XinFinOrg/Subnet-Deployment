@@ -19,16 +19,20 @@ async function getSubnetContainers() {
   const filtered = [];
   for (let i = 0; i < containers.length; i++) {
     if (containers[i].Names[0].includes("generated")) {
-      const networkName = containers[i].HostConfig.NetworkMode;
       const c = {
         name: containers[i].Names[0].substring(1),
         image: containers[i].Image,
         state: containers[i].State,
         status: containers[i].Status,
-        network: networkName,
-        ip: containers[i].NetworkSettings.Networks[networkName].IPAMConfig
-          .IPv4Address,
       };
+      const networkName = containers[i].HostConfig.NetworkMode;
+      const ip =
+        containers[i].NetworkSettings.Networks[networkName].IPAMConfig
+          .IPv4Address;
+      const rpcPort = extractRPCPort(c.name);
+      c.network = networkName;
+      c.ip = ip;
+      c.rpcPort = rpcPort;
       filtered.push(c);
     }
   }
@@ -61,8 +65,8 @@ async function checkMining() {
   for (let i = 0; i < containers.length; i++) {
     const c = containers[i];
     if (c.name.includes("subnet") && c.state == "running") {
-      blockHeights.push(await checkBlock(c.ip));
-      peerCounts.push(await checkPeers(c.ip));
+      blockHeights.push(await checkBlock(c.ip, c.rpcPort));
+      peerCounts.push(await checkPeers(c.ip, c.rpcPort));
     }
   }
   return {
@@ -71,9 +75,8 @@ async function checkMining() {
   };
 }
 
-async function checkBlock(containerIP) {
-  // const url = `http://${containerIP}:8545`;
-  const url = `http://localhost:8545`; //local testing
+async function checkBlock(containerIP, containerPort) {
+  let url = `http://${containerIP}:${containerPort}`;
   const data = {
     jsonrpc: "2.0",
     method: "XDPoS_getV2BlockByNumber",
@@ -85,18 +88,23 @@ async function checkBlock(containerIP) {
   };
 
   try {
-    const response = await axios.post(url, data, { headers });
+    let response;
+    try {
+      response = await axios.post(url, data, { headers, timeout: 2000 });
+    } catch (error) {
+      url = `http://localhost:${containerPort}`; //fallback for local testing
+      response = await axios.post(url, data, { headers, timeout: 2000 });
+    }
     let block = response.data.result.Number;
     if (block == null) block = 0;
     return block;
   } catch (error) {
-    console.error(error);
+    console.log(error);
   }
 }
 
-async function checkPeers(containerIP) {
-  // const url = `http://${containerIP}:8545`;
-  const url = `http://localhost:8545`; //local testing
+async function checkPeers(containerIP, containerPort) {
+  let url = `http://${containerIP}:${containerPort}`;
   const data = {
     jsonrpc: "2.0",
     method: "net_peerCount",
@@ -107,7 +115,13 @@ async function checkPeers(containerIP) {
   };
 
   try {
-    const response = await axios.post(url, data, { headers });
+    let response;
+    try {
+      response = await axios.post(url, data, { headers, timeout: 2000 });
+    } catch (error) {
+      url = `http://localhost:${containerPort}`; //fallback for local testing
+      response = await axios.post(url, data, { headers, timeout: 2000 });
+    }
     const peerHex = response.data.result;
     const peerCount = parseInt(peerHex, 16);
     return peerCount;
@@ -132,4 +146,13 @@ function isSubnetContainer(container) {
     isSubnet = true;
   }
   return [isSubnet, name];
+}
+
+function extractRPCPort(name) {
+  const shortName = name.split("-")[1];
+  nodeNum = parseInt(shortName.replace("subnet", ""));
+  // if (nodeNum === null) {
+  //   return 9999;
+  // }
+  return 8545 + nodeNum - 1;
 }

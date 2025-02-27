@@ -23,10 +23,7 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
     const wsport = 9554 + i;
     subnet_nodes[node_name] = {
       image: `xinfinorg/xdcsubnets:${config.version.subnet}`,
-      volumes: [
-        volume,
-        "${PWD}/genesis.json:/work/genesis.json",
-      ],
+      volumes: [volume, "${PWD}/genesis.json:/work/genesis.json"],
       restart: "always",
       network_mode: "host",
       env_file: [config_path],
@@ -63,7 +60,7 @@ function genBootNode(machine_id) {
 function genServices(machine_id) {
   const config_path = "common.env";
   const machine = "services";
-  const volume_path = '${PWD}'+'/'+config_path
+  const volume_path = "${PWD}" + "/" + config_path;
   const frontend = {
     image: `xinfinorg/subnet-frontend:${config.version.frontend}`,
     restart: "always",
@@ -101,32 +98,33 @@ function genServices(machine_id) {
   return services;
 }
 
-function genSubswapFrontend(){
+function genSubswapFrontend() {
   const subswap_frontend = {
     image: `xinfinorg/subswap-frontend:${config.version.subswap_frontend}`,
     restart: "always",
-    volumes: ["${PWD}/subswap-frontend.config.json:/app/subswap-frontend.config.json"],
+    volumes: [
+      "${PWD}/subswap-frontend.config.json:/app/subswap-frontend.config.json",
+    ],
     ports: ["5216:5216"],
     profiles: ["subswap"],
-  }
+  };
   const subswap = {
-    subswap_frontend
-  }
-  return subswap
+    subswap_frontend,
+  };
+  return subswap;
 }
 
-function genExplorer(){
-  const explorer_db = {
-  }
-  const explorer_ui = {}
-  const explorer_indexer = {}
+function genExplorer() {
+  const explorer_db = {};
+  const explorer_ui = {};
+  const explorer_indexer = {};
 
   const explorer = {
     // db: explorer_db,
     // ui: explorer_ui,
     // idx: explorer_indexer,
-  }
-  return explorer
+  };
+  return explorer;
 }
 
 function injectNetworkConfig(compose_object) {
@@ -138,6 +136,7 @@ function injectNetworkConfig(compose_object) {
   //         - subnet: 192.168.25.0/24
   const network = {
     docker_net: {
+      external: true,
       driver: "bridge",
       ipam: {
         config: [{ subnet: "192.168.25.0/24" }],
@@ -157,7 +156,7 @@ function injectNetworkConfig(compose_object) {
   Object.entries(compose_object["services"]).forEach((entry) => {
     const [key, value] = entry;
     let component_ip;
-    if (key.startsWith("subnet")){
+    if (key.startsWith("subnet")) {
       component_ip = ip_string_base + parseInt(start_ip_subnet);
       start_ip_subnet += 1;
     } else {
@@ -165,9 +164,7 @@ function injectNetworkConfig(compose_object) {
       start_ip_service += 1;
     }
     if (!net.isIP(component_ip)) {
-      console.log(
-        `ERROR: found invalid IP assignment ${component_ip}`
-      );
+      console.log(`ERROR: found invalid IP assignment ${component_ip}`);
       process.exit(1);
     }
     const component_network = {
