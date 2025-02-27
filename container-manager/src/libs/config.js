@@ -1,5 +1,6 @@
 const dotenv = require("dotenv");
 const fs = require("fs");
+const yaml = require('js-yaml');
 const path = require('path'); 
 const mountPath = path.join(__dirname, '../../mount/generated/')
 console.log(mountPath)
@@ -14,7 +15,7 @@ function initModule(){
   if (!found) {
     throw Error(`Incomplete mount, did not find: ${name}`)
   }
-  config['compose'] = composeCommand()
+  config['compose'] = getComposeCommand()
 }
 
 function checkFiles(){
@@ -36,7 +37,7 @@ function checkFiles(){
   return [true, '']
 }
 
-function composeCommand(){
+function getComposeCommand(){
   return 'docker compose' //bypass TODO:
   let command = ''
   let output1 = ''

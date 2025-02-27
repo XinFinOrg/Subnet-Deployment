@@ -12,8 +12,16 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
+app.get('/test', async (req, res) => {
+  const response = await state.checkMining()
+  console.log(response)
+  res.setHeader('Content-Type', 'application/json')
+  res.send(JSON.stringify(response, null, 2))
+});
+
 app.get('/state', async (req, res) => {
-  const response = await state.getContainersState()
+  // const response = await state.getContainersState()
+  const response = await state.getSubnetContainers()
   res.setHeader('Content-Type', 'application/json')
   res.send(JSON.stringify(response, null, 2))
 })

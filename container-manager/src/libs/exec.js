@@ -49,7 +49,7 @@ function deployContract(){
 //test command
 // executeTest('echo a; sleep 1; echo b; sleep 1; echo c; sleep 1; skdjf;asjdkfasjdflsa; sleep 1; exit 1; sleep 1; echo f')
 async function executeTest(command, outputHandler, doneHandler){
-  command = 'echo a; sleep 1; echo b; sleep 1; echo c; sleep 1; echo d; sleep 1; echo e; sleep 1; echo f'
+  command = 'echo $RANDOM; sleep 1; echo $RANDOM; sleep 1; echo a; sleep 1; echo b; sleep 1; echo c; sleep 1; echo d; sleep 1; echo e; sleep 1; echo f'
   const pathCommand = 'cd '+mountPath+';'+'export PWD=/Users/wp/Git/Subnet-Deployment/container-manager/mount/generated;'+command
   execProcess = exec(pathCommand)
 

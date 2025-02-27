@@ -4,10 +4,14 @@ const instance = axios.create({
   baseURL: "http://unix:/", 
 });
 
-
 module.exports = {
   getSubnetContainers,
   getContainersState,
+  checkMining,
+  streamContainersState,
+}
+
+function streamContainersState(){
 }
 
 async function getSubnetContainers() {
@@ -16,20 +20,20 @@ async function getSubnetContainers() {
   const filtered = []
   for(let i=0; i<containers.length; i++){
     if(containers[i].Names[0].includes('generated')){
+      const networkName = containers[i].HostConfig.NetworkMode
       const c = {
         name: containers[i].Names[0].substring(1),
         image: containers[i].Image,
         state: containers[i].State,
         status: containers[i].Status,
-        network: containers[i].HostConfig.NetworkMode
+        network: networkName,
+        ip: containers[i].NetworkSettings.Networks[networkName].IPAMConfig.IPv4Address
       }
       filtered.push(c)
     } 
   }
   return filtered
 }
-
-
 
 async function getContainersState(){ 
   const containers = await getSubnetContainers()
@@ -50,14 +54,71 @@ async function checkDeployState(){
 }
 
 function checkContractState(){
-
 }
-function checkMining(){
 
+async function checkMining(){
+  const containers = await getSubnetContainers()
+  const blockHeights = []
+  const peerCounts = []
+  for(let i=0; i<containers.length;i++){
+    const c = containers[i]
+    if(c.name.includes('subnet') && c.state == 'running'){
+      blockHeights.push(await checkBlock(c.ip))
+      peerCounts.push(await checkPeers(c.ip))
+    }
+  }
+  return {
+    blocks: blockHeights,
+    peers: peerCounts,
+  }
 }
-function checkPeers(){
 
+async function checkBlock(containerIP){
+  // const url = `http://${containerIP}:8545`;
+  const url = `http://localhost:8545`; //local testing
+  const data = {
+    jsonrpc: '2.0',
+    method: 'XDPoS_getV2BlockByNumber',
+    params: ['latest'],
+    id: 1,
+  };
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  try{
+    const response = await axios.post(url,data,{headers})
+    let block = response.data.result.Number
+    if (block == null) block=0
+    return block
+
+  }catch(error){
+    console.error(error);
+  }
 }
+
+async function checkPeers(containerIP){
+  // const url = `http://${containerIP}:8545`;
+  const url = `http://localhost:8545`; //local testing
+  const data = {
+    jsonrpc: '2.0',
+    method: 'net_peerCount',
+    id: 1,
+  };
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  try{
+    const response = await axios.post(url,data,{headers})
+    const peerHex = response.data.result
+    const peerCount = parseInt(peerHex, 16)
+    return peerCount
+  }catch(error){
+    console.error(error);
+  }
+} 
+
 function confirmCompatible(){
   //check docker version
   //check docker compose version

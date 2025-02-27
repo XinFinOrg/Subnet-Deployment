@@ -27,10 +27,6 @@ async function callStreamApi(route){
   const outputElement = document.getElementById('output'); 
   const eventSource = new EventSource(route);
   try {
-    const response = await fetch(route, {method: 'GET'});
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
     outputElement.textContent = ''
     eventSource.onmessage = (event) => {
       outputElement.textContent += event.data + '\n'; 
