@@ -1,15 +1,13 @@
-async function callApi(route) {
-  const outputDiv = document.getElementById("output");
+async function callApi(route, outElementId) {
+  const outputDiv = document.getElementById(outElementId);
   try {
     const response = await fetch(route, { method: "GET" });
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-
     const contentType = response.headers.get("Content-Type");
     let data;
     if (contentType && contentType.includes("application/json")) {
-      console.log("response header JSON");
       data = await response.json();
       data = JSON.stringify(data, null, 2);
     } else {
@@ -47,4 +45,12 @@ async function callStreamApi(route) {
     console.error("Error:", error);
     outputElement.textContent = "API call failed: " + error.message;
   }
+}
+
+
+async function fetchLoop(){
+  await callApi('/state', 'state')
+  setInterval(()=>{
+    callApi('/state', 'state')
+  }, 5000)
 }

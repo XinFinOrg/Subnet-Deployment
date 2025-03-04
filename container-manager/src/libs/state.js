@@ -5,13 +5,23 @@ const instance = axios.create({
 });
 
 module.exports = {
+  getState,
   getSubnetContainers,
   getContainersState,
   checkMining,
-  streamContainersState,
 };
 
-function streamContainersState() {}
+async function getState() {
+  containers = await getContainersState()
+  // containers = await getSubnetContainers()
+  mineInfo = await checkMining() 
+  // contracts = await checkContractState()
+
+  return {
+    containers: containers,
+    mineInfo: mineInfo
+  }
+}
 
 async function getSubnetContainers() {
   const response = await instance.get("http://localhost/containers/json");
@@ -99,7 +109,7 @@ async function checkBlock(containerIP, containerPort) {
     if (block == null) block = 0;
     return block;
   } catch (error) {
-    console.log(error);
+    console.log(error.code);
   }
 }
 
@@ -126,7 +136,7 @@ async function checkPeers(containerIP, containerPort) {
     const peerCount = parseInt(peerHex, 16);
     return peerCount;
   } catch (error) {
-    console.error(error);
+    console.error(error.code);
   }
 }
 
@@ -155,4 +165,12 @@ function extractRPCPort(name) {
   //   return 9999;
   // }
   return 8545 + nodeNum - 1;
+}
+
+
+function sleepSync(ms) {
+  const start = Date.now();
+  while (Date.now() - start < ms) {
+    // Busy-wait loop (blocks the event loop)
+  }
 }

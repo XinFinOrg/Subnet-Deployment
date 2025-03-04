@@ -3,7 +3,8 @@ const exec = require("./libs/exec");
 const path = require("path");
 const express = require("express");
 const app = express();
-const PORT = 3000;
+const PORT = 5210;
+let lastCalled = Date.now()
 
 app.use(express.static(path.join(__dirname, "public")));
 app.set("json spaces", 2);
@@ -22,7 +23,10 @@ app.get("/test", async (req, res) => {
 
 app.get("/state", async (req, res) => {
   console.log("/state called");
-  const response = await state.getSubnetContainers();
+  const thisCall = Date.now()
+  console.log("time form last call: ", thisCall-lastCalled)
+  lastCalled = thisCall
+  const response = await state.getState();
   res.setHeader("Content-Type", "application/json");
   res.send(JSON.stringify(response, null, 2));
 });
@@ -55,7 +59,10 @@ app.get("/stream", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   const dataCallback = (data) => {
-    res.write(`data:${data}\n\n`);
+    lines = data.split('\n')
+    for(let l=0;l<lines.length;l++){
+      res.write(`data:${lines[l]}\n\n`);
+    }
   };
 
   const doneCallback = () => {
@@ -63,50 +70,36 @@ app.get("/stream", async (req, res) => {
     res.end();
   };
   await exec.executeTest("", dataCallback, doneCallback);
-  // await exec.executeTest(
-  //   "",
-  //   (data) => {
-  //     res.write(`data:${data}\n\n`);
-  //   },
-  //   () => {
-  //     res.write("event: close\ndata: Connection closed by server\n\n");
-  //     res.end();
-  //   }
-  // );
-
-  // Handle client disconnect
   req.on("close", () => {
     res.end();
   });
 });
 
 app.get("/start_subnet", async (req, res) => {
-  console.log("/start_subnet called");
-  const response = await exec.startComposeProfile("machine1");
-  res.setHeader("Content-Type", "application/json");
-  res.send(JSON.stringify(response, null, 2));
+  console.log("/start_subnet called")
+  await exec.startComposeProfile("machine1", setupRes(req,res));
 });
 
 app.get("/deploy_csc", async (req, res) => {
   console.log("/deploy_csc called");
-  const response = await exec.deployContract("csc");
-  res.setHeader("Content-Type", "application/json");
-  res.send(JSON.stringify(response, null, 2));
+  await exec.deployCSC(setupRes(req,res));
 });
 
 app.get("/start_services", async (req, res) => {
-  exec.startComposeProfile("services");
-  const response = await docker.getContainersState();
-  res.setHeader("Content-Type", "application/json");
-  res.send(JSON.stringify(response, null, 2));
+  console.log("/start_services called")
+  await exec.startComposeProfile("services", setupRes(req,res));
 });
 
-app.get("/stop_all", async (req, res) => {
-  exec.stopComposeProfile("machine1");
-  exec.stopComposeProfile("services");
-  const response = await docker.getContainersState();
-  res.setHeader("Content-Type", "application/json");
-  res.send(JSON.stringify(response, null, 2));
+app.get("/stop_services", async (req, res) => {
+  console.log("/stop_services called")
+  const callbacks = setupRes(req,res)
+  await exec.stopComposeProfile("services", callbacks);
+});
+
+app.get("/stop_subnet", async (req, res) => {
+  console.log("/stop_subnet called")
+  const callbacks = setupRes(req,res)
+  await exec.stopComposeProfile("machine1", callbacks);
 });
 
 // app.get('/generate', async (req, res) => {
@@ -121,5 +114,28 @@ function sleepSync(ms) {
   const start = Date.now();
   while (Date.now() - start < ms) {
     // Busy-wait loop (blocks the event loop)
+  }
+}
+
+function setupRes(req,res){
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  const dataCallback = (data) => {
+    lines = data.split('\n')
+    for(let l=0;l<lines.length;l++){
+      res.write(`data:${lines[l]}\n\n`);
+    }
+  };
+  const doneCallback = () => {
+    res.write("event: close\ndata: Done\n\n");
+    res.end();
+  };
+  req.on("close", () => {
+    res.end();
+  });
+  return {
+    dataCallback: dataCallback,
+    doneCallback: doneCallback
   }
 }

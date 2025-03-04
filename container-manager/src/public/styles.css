@@ -2,18 +2,31 @@ body {
   font-family: Arial, sans-serif;
   background-color: #f4f4f4;
   display: flex;
+  /* flex-direction: column; */
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh; /* Use min-height instead of height */
   margin: 0;
+  padding: 20px; /* Add padding to prevent content from touching the edges */
+}
+
+.body-wrap{
+  /* background-color: red; */
+  display:flex;
+  /* align-items: center; */
+  /* justify-content: center; */
+  
 }
 
 .container {
   background-color: #fff;
   padding: 20px;
+  margin: 20px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   text-align: center;
+  min-width: 300px;
+  min-height: 300px;
 }
 
 h1 {
@@ -41,9 +54,7 @@ h1 {
   background-color: #b30000;
 }
 
-
-
-#output {
+.output {
   /* display: block; */
   margin-top: 20px;
   padding: 15px;

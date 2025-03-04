@@ -17,7 +17,7 @@ docker run -d                                             \
   -p 3000:3000                                            \
   -v /var/run/docker.sock:/var/run/docker.sock            \
   -v $current_dir/generated:/mount/generated                \
-  -e HOSTPWD=/Users/wp/Git/Subnet-Deployment/container-manager/mount                             \
+  -e HOSTPWD=$current_dir                            \
   api-test
 
 

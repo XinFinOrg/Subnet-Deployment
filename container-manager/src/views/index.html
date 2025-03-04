@@ -3,28 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Buttons</title>
+    <title>Subnet Deployment Wizard</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
+<body onload="fetchLoop()">
+  <div class="body-wrap">
     <div class="container">
-      <h1>API Control Buttons</h1>
-      <button class="button" onclick="callApi('/state')">Get State</button>
-      <button class="button" onclick="callApi('/start_subnet')">Start Subnet</button>
-      <button class="button" onclick="callApi('/deploy_csc')">Deploy CSC</button>
-      <button class="button" onclick="callApi('/start_services')">Start Services</button>
+      <h1>Subnet Deployment Wizard</h1>
       <div>
-        <button class="button red" onclick="callApi('/stop_all')">Stop All Containers</button>
+        <button class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+        <button class="button" onclick="callStreamApi('/deploy_csc', 'output')">Deploy CSC</button>
+        <button class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
       </div>
       <div>
-        <button class="button" onclick="callStreamApi('/events')">Test Events</button>
-        <button class="button" onclick="callStreamApi('/stream')">Test Stream</button>
+        <button class="button red" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
+        <button class="button red" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
       </div>
-      <div>
-        <button class="button red" onclick="callApi('/test')">test</button>
-      </div>
-      <div id="output">API response will appear here...</div>
+      <!-- <div>
+        <button class="button" onclick="callStreamApi('/events', 'output')">Test Events</button>
+        <button class="button" onclick="callStreamApi('/stream', 'output')">Test Stream</button>
+        <button class="button red" onclick="callApi('/test', 'output')">test</button>
+      </div> -->
+      <div id="output" class="output">Responses will appear here...</div>
     </div>
+
+    <div class="container">
+      <h1>Status</h1>
+      <!-- <button class="button" onclick="fetchLoop()">Manual start</button> -->
+      <div id="state" class="output" >Status: </div>
+    </div>
+  </div>
 
     <script src="script.js"></script>
 </body>
