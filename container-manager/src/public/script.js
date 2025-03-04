@@ -22,7 +22,13 @@ async function callApi(route, outElementId) {
 }
 
 async function callStreamApi(route) {
-  const outputElement = document.getElementById("output");
+  // const outputElement = document.createElement('div');
+  // outputElement.className = 'output';
+  collapseHistoryDivs();
+  const [outputWrapper, outputElement] = createCollapsibleDiv(route);
+  document.getElementById('history').appendChild(outputWrapper);
+  
+  // const outputElement = document.getElementById("output");
   const eventSource = new EventSource(route);
   try {
     outputElement.textContent = "";
@@ -47,6 +53,50 @@ async function callStreamApi(route) {
   }
 }
 
+function createCollapsibleDiv(route){
+  const newDiv = document.createElement('div');
+  newDiv.className = 'output-wrapper';
+
+  const buttonDiv = document.createElement('div')
+  const command = document.createElement('button')
+  command.textContent = route
+  const toggleButton = document.createElement('button');
+  toggleButton.className = 'toggle-button';
+  toggleButton.textContent = 'Collapse';
+  buttonDiv.appendChild(command)
+  buttonDiv.appendChild(toggleButton)
+  newDiv.appendChild(buttonDiv);
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'output';
+  contentDiv.style.display = 'block'; 
+  newDiv.appendChild(contentDiv);
+
+  // Add click event to the toggle button
+  toggleButton.addEventListener('click', function() {
+      if (contentDiv.style.display === 'none') {
+          contentDiv.style.display = 'block';
+          toggleButton.textContent = 'Collapse';
+      } else {
+          contentDiv.style.display = 'none';
+          toggleButton.textContent = 'Expand';
+      }
+  });
+
+  return [newDiv, contentDiv]
+}
+
+function collapseHistoryDivs(){
+  const outputElements = document.getElementsByClassName('output');
+  for (let element of outputElements) {
+      element.style.display='none';
+  }
+  
+  const toggleButtonElements = document.getElementsByClassName('toggle-button');
+  for (let element of toggleButtonElements) {
+      element.textContent = 'Expand'
+  }
+}
 
 async function fetchLoop(){
   await callApi('/state', 'state')

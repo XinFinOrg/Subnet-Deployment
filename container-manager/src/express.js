@@ -13,14 +13,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 
-app.get("/test", async (req, res) => {
-  console.log("/test called");
-  const response = await state.checkMining();
-  console.log(response);
-  res.setHeader("Content-Type", "application/json");
-  res.send(JSON.stringify(response, null, 2));
-});
-
 app.get("/state", async (req, res) => {
   console.log("/state called");
   const thisCall = Date.now()
@@ -31,53 +23,14 @@ app.get("/state", async (req, res) => {
   res.send(JSON.stringify(response, null, 2));
 });
 
-app.get("/events", (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-
-  let counter = 0;
-  const interval = setInterval(() => {
-    counter++;
-    res.write(`data: Event ${counter}\n\n`);
-    if (counter >= 5) {
-      clearInterval(interval);
-      res.write("event: close\ndata: Connection closed by server\n\n");
-      res.end();
-    }
-  }, 1000);
-
-  // Handle client disconnect
-  req.on("close", () => {
-    clearInterval(interval);
-    res.end();
-  });
-});
-
-app.get("/stream", async (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  const dataCallback = (data) => {
-    lines = data.split('\n')
-    for(let l=0;l<lines.length;l++){
-      res.write(`data:${lines[l]}\n\n`);
-    }
-  };
-
-  const doneCallback = () => {
-    res.write("event: close\ndata: Connection closed by server\n\n");
-    res.end();
-  };
-  await exec.executeTest("", dataCallback, doneCallback);
-  req.on("close", () => {
-    res.end();
-  });
-});
-
 app.get("/start_subnet", async (req, res) => {
   console.log("/start_subnet called")
   await exec.startComposeProfile("machine1", setupRes(req,res));
+});
+
+app.get("/start_subnet_slow", async (req, res) => {
+  console.log("/start_subnet_slow called")
+  await exec.startSubnet("machine1", setupRes(req,res));
 });
 
 app.get("/deploy_csc", async (req, res) => {

@@ -8,6 +8,7 @@ module.exports = {
   stopComposeProfile,
   deployCSC,
   executeTest,
+  startSubnet,
 };
 
 const streamExecOutput = (data) => {
@@ -22,6 +23,22 @@ async function startComposeProfile(profile, callbacks) {
   await execute(
     `${config.compose} --profile ${profile} pull;\n` +
     `${config.compose} --profile ${profile} up -d;\n`,
+    callbacks.dataCallback,
+    callbacks.doneCallback
+  );
+  return {};
+}
+
+async function startSubnet(profile, callbacks) {
+  await execute(
+    `${config.compose} --profile machine1 pull;\n` +
+    `${config.compose} --profile machine1 up -d subnet1;\n`+
+    `sleep 10;\n`+
+    `${config.compose} --profile machine1 up -d subnet2;\n`+
+    `sleep 10;\n`+
+    `${config.compose} --profile machine1 up -d subnet3;\n`+
+    `sleep 10;\n`+
+    `${config.compose} --profile machine1 up -d bootnode;\n`,
     callbacks.dataCallback,
     callbacks.doneCallback
   );

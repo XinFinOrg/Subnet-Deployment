@@ -53,8 +53,29 @@ h1 {
 .button.red:hover {
   background-color: #b30000;
 }
+.toggle-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.toggle-button:hover {
+  background-color: #0056b3;
+}
 
 .output {
+  /* display: block; */
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-family: monospace;
+  text-align: left;
+  white-space: pre-wrap; /* Ensures JSON formatting is preserved */
+}
+.output-status {
   /* display: block; */
   margin-top: 20px;
   padding: 15px;
