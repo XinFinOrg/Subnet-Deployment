@@ -64,9 +64,17 @@ async function getContainersState() {
   return [subnets, services];
 }
 
-async function checkDeployState() {}
+async function checkDeployState() {
+//maybe too similar to getcontainersstate (already displayed)
+}
 
-function checkContractState() {}
+async function checkContractState() {
+// csc = lite/full, deployed/notfound, (current height?)
+// reverse csc = deployed/notfound
+// subswap = deployed/notfound
+
+
+}
 
 async function checkMining() {
   const containers = await getSubnetContainers();
@@ -144,6 +152,8 @@ function confirmCompatible() {
   //check docker version
   //check docker compose version
   // only requirement is docker
+  //
+  // for init
 }
 
 function isSubnetContainer(container) {

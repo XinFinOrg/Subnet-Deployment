@@ -1,5 +1,4 @@
 #!/bin/bash
-
 current_dir="$(cd "$(dirname "$0")" && pwd)"
 network_name="docker_net"
 
@@ -12,20 +11,14 @@ else
   echo "Joining existing network '$network_name'"
 fi
 
-docker run -d                                             \
+docker run -d                                   \
   --network "docker_net" --ip=192.168.25.111    \
-  -p 3000:3000                                            \
-  -v /var/run/docker.sock:/var/run/docker.sock            \
-  -v $current_dir/generated:/mount/generated                \
-  -e HOSTPWD=$current_dir                            \
-  api-test
-
-
-# services:
-#   docker-tester:
-#     image: api-test
-#     volumes:
-#       - /var/run/docker.sock:/var/run/docker.sock
-#       - ${PWD}/mount/generated/:/mount/generated/
-#     ports:
-#       - 3000:3000 
+  -p 5210:5210                                  \
+  -v /var/run/docker.sock:/var/run/docker.sock  \
+  -v $current_dir/generated:/mount/generated    \
+  -e HOSTPWD=$current_dir/generated             \
+  api-test  \
+  && \
+echo 'go to http://localhost:5210 to access Subnet Configuration Generator UI' && \
+echo 'or use ssh tunnel if this is running on your server' && \
+echo 'ssh -N -L localhost:5210:localhost:5210 <username>@<ip_address> -i <private_key_file>' 

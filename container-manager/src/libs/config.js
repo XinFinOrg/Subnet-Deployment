@@ -27,7 +27,7 @@ function checkFiles() {
     "docker-compose.yml",
     "common.env",
     "contract_deploy.env",
-    "genesis.json",
+    // "genesis.json",
   ];
   if (!fs.existsSync(mountPath)) {
     //first check folder exists

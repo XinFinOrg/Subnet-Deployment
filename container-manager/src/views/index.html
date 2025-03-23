@@ -11,12 +11,16 @@
     <div class="container">
       <h1>Subnet Deployment Wizard</h1>
       <div>
+        <button class="button" onclick="window.open('/gen', '_blank')">Generate Configs</button>
         <button class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
         <button class="button" onclick="callStreamApi('/deploy_csc', 'output')">Deploy CSC</button>
+        <button class="button" onclick="callStreamApi('/deploy_crosschain', 'output')">Deploy Crosschain</button>
+        <button class="button" onclick="callStreamApi('/deploy_subswap', 'output')">Deploy Subswap</button>
         <button class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
       </div>
       <div>
         <button class="button red" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
+        <button class="button red" onclick="callStreamApi('/remove_subnet', 'output')">Remove Subnet</button>
         <button class="button red" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
       </div>
       <!-- <div>

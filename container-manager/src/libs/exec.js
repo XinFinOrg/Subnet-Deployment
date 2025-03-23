@@ -8,7 +8,8 @@ module.exports = {
   stopComposeProfile,
   deployCSC,
   executeTest,
-  startSubnet,
+  startSubnetGradual,
+  removeSubnet,
 };
 
 const streamExecOutput = (data) => {
@@ -29,7 +30,7 @@ async function startComposeProfile(profile, callbacks) {
   return {};
 }
 
-async function startSubnet(profile, callbacks) {
+async function startSubnetGradual(profile, callbacks) {
   await execute(
     `${config.compose} --profile machine1 pull;\n` +
     `${config.compose} --profile machine1 up -d subnet1;\n`+
@@ -54,6 +55,15 @@ async function stopComposeProfile(profile, callbacks) {
   return {};
 }
 
+async function removeSubnet(profile, callbacks){
+  await execute(
+    `${config.compose} --profile ${profile} down; rm -rf xdcchain*`,
+    callbacks.dataCallback,
+    callbacks.doneCallback
+  );
+
+}
+
 async function deployCSC(callbacks) {
   // docker pull xinfinorg/csc:feature-v0.3.0
   // docker run -v ${PWD}/:/app/cicd/mnt/ --network generated_docker_net xinfinorg/csc:feature-v0.3.0 full
@@ -70,6 +80,14 @@ async function deployCSC(callbacks) {
   //TODO: use detected network name
 
   return {};
+}
+
+async function deploySubswap(callbacks){
+
+}
+
+async function deployZero(callbacks){
+  
 }
 
 async function executeTest(command, outputHandler, doneHandler) {
@@ -111,3 +129,4 @@ async function execute(command, outputHandler, doneHandler) {
 
   return prom;
 }
+
