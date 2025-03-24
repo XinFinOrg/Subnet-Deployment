@@ -47,6 +47,11 @@ h1 {
 .button:hover {
   background-color: #0056b3;
 }
+.button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
 .button.red {
   background-color: #db0000;
 }

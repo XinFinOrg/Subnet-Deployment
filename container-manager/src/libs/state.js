@@ -11,6 +11,51 @@ module.exports = {
   checkMining,
 };
 
+const stateInit = {
+  NONE: 'NONE',
+  INCOMPLETE: 'INCOMPLETE',
+  GENERATED: 'GENERATED',
+  CONTRACTS_DEPLOYED: 'CONTRACTS_DEPLOYED', 
+}
+const stateSubnet = {
+  OFFLINE: 'OFFLINE',
+  ERROR: 'ERROR',
+  STALLED: 'STALLED',
+  MINING: 'MINING'
+}
+const stateService = {
+  OFFLINE: 'OFFLINE',
+  ERROR: 'ERROR',
+  DEPLOYED: 'DEPLOYED'
+}
+const stateContractMode = {
+  LITE: 'LITE',
+  FULL: 'FULL',
+  ZERO_BIDIRECTIONAL: 'ZERO_BIDIRECTIONAL',
+  ZERO_ONEDIRECTIONAL: 'ZERO_ONEDIRECTIONAL',
+  SUBSWAP: 'SUBSWAP',
+}
+const relayerMode = {
+  LITE: 'LITE',
+  FULL: 'FULL'
+}
+const zeroMode = {
+  NONE: 'NONE',
+  ZERO_BIDIRECTIONAL: 'ZERO_BIDIRECTIONAL',
+  ZERO_ONEDIRECTIONAL: 'ZERO_ONEDIRECTIONAL',
+}
+const subswapMode = {
+  NONE: 'NONE',
+  SUBSWAP: 'SUBSWAP'
+}
+const stateContract = {
+  NONE: 'NONE',
+  DEPLOYED: 'DEPLOYED'
+}
+
+const stateExplorer={}
+const stateMonitor={}
+
 async function getState() {
   containers = await getContainersState()
   // containers = await getSubnetContainers()
@@ -19,7 +64,8 @@ async function getState() {
 
   return {
     containers: containers,
-    mineInfo: mineInfo
+    mineInfo: mineInfo,
+    stateGen: stateGen.GENERATED
   }
 }
 

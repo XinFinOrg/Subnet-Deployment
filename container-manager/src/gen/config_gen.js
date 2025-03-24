@@ -2,8 +2,7 @@ const crypto = require("crypto");
 const net = require("net");
 const dotenv = require("dotenv");
 const ethers = require("ethers");
-dotenv.config({ path: `${__dirname}/gen.env` });
-// console.log(__dirname)
+dotenv.config({ path: `${__dirname}/../../mount/generated/gen.env` });
 
 const config = {
   deployment_path: process.env.CONFIG_PATH || "",

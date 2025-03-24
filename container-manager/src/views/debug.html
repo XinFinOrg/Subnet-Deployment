@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subnet Deployment Wizard</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body onload="fetchLoop()">
+  <div class="body-wrap">
+    <div class="container">
+      <h1>Subnet Deployment Wizard</h1>
+      <div>
+        <button id="gen_button" class="button" onclick="window.open('/gen', '_blank')">Generate Configs</button>
+        <button id="start_button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+        <button id="service_button" class="button" onclick="callStreamApi('/deploy_csc', 'output')">Deploy CSC</button>
+      </div>
+      <div>
+        <button class="button" onclick="window.open('/gen', '_blank')">Generate Configs</button>
+        <button class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+        <button class="button" onclick="callStreamApi('/deploy_csc', 'output')">Deploy CSC</button>
+        <button class="button" onclick="callStreamApi('/deploy_crosschain', 'output')">Deploy Crosschain</button>
+        <button class="button" onclick="callStreamApi('/deploy_subswap', 'output')">Deploy Subswap</button>
+        <button class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
+      </div>
+      <div>
+        <button class="button red" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
+        <button class="button red" onclick="callStreamApi('/remove_subnet', 'output')">Remove Subnet</button>
+        <button class="button red" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
+      </div>
+      <!-- <div>
+        <button class="button" onclick="callStreamApi('/events', 'output')">Test Events</button>
+        <button class="button" onclick="callStreamApi('/stream', 'output')">Test Stream</button>
+        <button class="button red" onclick="callApi('/test', 'output')">test</button>
+      </div> -->
+      <div id="history">
+        <div>History:</div>
+      </div>
+    </div>
+
+    <div class="container">
+      <h1>Status</h1>
+      <div id="state" class="output-status" >Status: </div>
+    </div>
+  </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

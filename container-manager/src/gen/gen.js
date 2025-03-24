@@ -82,8 +82,6 @@ const deployconf = gen_env.genContractDeployEnv(ip_record);
 
 const compose_content = yaml.dump(doc, {});
 
-// deployment commands list
-const commands = gen_other.genCommands();
 const genesis_input = gen_other.genGenesisInputFile(
   config.network_name,
   config.network_id,
@@ -95,7 +93,7 @@ const genesis_input_file = yaml.dump(genesis_input, {});
 writeGenerated(config.generator.output_path);
 copyScripts(config.generator.output_path);
 
-console.log("gen successful, follow the instructions in command.txt");
+console.log("gen successful");
 
 function writeGenerated(output_dir) {
   // const pathCommand =
@@ -171,12 +169,6 @@ function writeGenerated(output_dir) {
     }
   );
 
-  fs.writeFileSync(`${output_dir}/commands.txt`, commands, (err) => {
-    if (err) {
-      console.error(err);
-      exit();
-    }
-  });
 }
 
 function copyScripts(output_dir) {

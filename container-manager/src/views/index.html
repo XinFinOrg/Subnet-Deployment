@@ -11,23 +11,10 @@
     <div class="container">
       <h1>Subnet Deployment Wizard</h1>
       <div>
-        <button class="button" onclick="window.open('/gen', '_blank')">Generate Configs</button>
-        <button class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
-        <button class="button" onclick="callStreamApi('/deploy_csc', 'output')">Deploy CSC</button>
-        <button class="button" onclick="callStreamApi('/deploy_crosschain', 'output')">Deploy Crosschain</button>
-        <button class="button" onclick="callStreamApi('/deploy_subswap', 'output')">Deploy Subswap</button>
-        <button class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
+        <button id="gen_button" class="button" onclick="window.open('/gen', '_blank')">Generate Configs</button>
+        <button id="start_button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+        <button id="service_button" class="button" onclick="callStreamApi('/deploy_csc', 'output')">Deploy CSC</button>
       </div>
-      <div>
-        <button class="button red" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
-        <button class="button red" onclick="callStreamApi('/remove_subnet', 'output')">Remove Subnet</button>
-        <button class="button red" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
-      </div>
-      <!-- <div>
-        <button class="button" onclick="callStreamApi('/events', 'output')">Test Events</button>
-        <button class="button" onclick="callStreamApi('/stream', 'output')">Test Stream</button>
-        <button class="button red" onclick="callApi('/test', 'output')">test</button>
-      </div> -->
       <div id="history">
         <div>History:</div>
       </div>
@@ -42,3 +29,25 @@
     <script src="script.js"></script>
 </body>
 </html>
+
+<!-- 
+steps:
+  1. Generate ... done checkmark
+    gen button 
+
+  2a. copy subnet files if multiple machine 
+  2b. start Subnet ... done checkmark
+    start button
+  3. deploy CSC ... done checkmark
+    deploy button 
+  4. deploy crosschain ... done checkmark
+    deploy button
+  5. start services ... done checkmark
+
+  5a. show links to services view page << how this works locally vs on server?
+
+  6. start explorer (optional) 
+
+  
+  
+  -->

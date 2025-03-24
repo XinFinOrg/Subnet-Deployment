@@ -1,4 +1,4 @@
-async function callApi(route, outElementId) {
+async function callStateApi(route, outElementId) {
   const outputDiv = document.getElementById(outElementId);
   try {
     const response = await fetch(route, { method: "GET" });
@@ -9,15 +9,29 @@ async function callApi(route, outElementId) {
     let data;
     if (contentType && contentType.includes("application/json")) {
       data = await response.json();
-      data = JSON.stringify(data, null, 2);
+      adjustStateDivs(data)
+      display = {
+        containers: data.containers,
+        mineInfo: data.mineInfo
+      }
+      display = JSON.stringify(display, null, 2);
     } else {
       data = await response.text();
     }
 
-    outputDiv.textContent = data;
+    outputDiv.textContent = display;
   } catch (error) {
     console.error("Error:", error);
     outputDiv.textContent = "API call failed: " + error.message;
+  }
+}
+
+function adjustStateDivs(data){
+  // console.log('adjust divs')
+  // console.log(data)
+  if (data.stateGen != 'NONE'){
+    const genButton = document.getElementById("gen_button")
+    genButton.disabled = true
   }
 }
 
@@ -99,8 +113,8 @@ function collapseHistoryDivs(){
 }
 
 async function fetchLoop(){
-  await callApi('/state', 'state')
+  await callStateApi('/state', 'state')
   setInterval(()=>{
-    callApi('/state', 'state')
+    callStateApi('/state', 'state')
   }, 5000)
 }

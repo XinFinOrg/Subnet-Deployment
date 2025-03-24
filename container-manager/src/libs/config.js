@@ -24,14 +24,15 @@ function initModule() {
 
 function checkFiles() {
   files = [
-    "docker-compose.yml",
-    "common.env",
-    "contract_deploy.env",
+    // "docker-compose.yml",
+    // "common.env",
+    // "contract_deploy.env",
     // "genesis.json",
   ];
-  if (!fs.existsSync(mountPath)) {
+  const shouldExistMount = path.join(mountPath, 'scripts')
+  if (!fs.existsSync(shouldExistMount)) {
     //first check folder exists
-    return [false, path.join(mountPath)];
+    return [false, shouldExistMount];
   }
   for (let i = 0; i < files.length; i++) {
     filename = path.join(mountPath, files[i]);
