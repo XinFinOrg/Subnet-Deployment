@@ -10,10 +10,11 @@ async function callStateApi(route, outElementId) {
     if (contentType && contentType.includes("application/json")) {
       data = await response.json();
       adjustStateDivs(data)
-      display = {
-        containers: data.containers,
-        mineInfo: data.mineInfo
-      }
+      // display = {
+      //   containers: data.containers,
+      //   mineInfo: data.mineInfo
+      // }
+      display = data
       display = JSON.stringify(display, null, 2);
     } else {
       data = await response.text();
@@ -29,7 +30,7 @@ async function callStateApi(route, outElementId) {
 function adjustStateDivs(data){
   // console.log('adjust divs')
   // console.log(data)
-  if (data.stateGen != 'NONE'){
+  if (data.deployState != 'NONE'){
     const genButton = document.getElementById("gen_button")
     genButton.disabled = true
   }

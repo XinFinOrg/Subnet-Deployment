@@ -135,19 +135,31 @@ async function execute(command, outputHandler, doneHandler) {
 
 function generate(params){
   genEnv = genGenEnv(params)
-  fs.writeFileSync(path.join(__dirname, "../../mount/generated/gen.env"), genEnv, (err) => { //write to mount
+  fs.writeFileSync(path.join(mountPath, "gen.env"), genEnv, (err) => { //write to mount
     if (err) {
       console.error(err);
       exit();
     }
   });
-  return callExec(`cd ${__dirname}/../gen; node gen.js`);
+  
+  let command = `cd ${__dirname}/../gen; node gen.js`
+  console.log(command)
+  const [result, out] = callExec(command);
+  if (!result){
+    return [result, out]
+  }
+  console.log('gen success')
+  command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' xinfinorg/xdcsubnets:${config.version.genesis} /work/puppeth.sh` 
+  console.log(command)
+  const [result2, out2] = callExec(command);
+  return [result2, out2]
 }
 
 function callExec(command) {
   try {
     const stdout = execSync(command, { timeout: 200000, encoding: 'utf-8'});
     output = stdout.toString();
+
     // console.log(output);
     return [true, output]
   } catch (error) {
@@ -271,4 +283,23 @@ RELAYER_MODE=${relayer_mode}
   console.log(content)
 
   return content
+}
+
+
+async function genGenesis(callbacks) {
+  // docker pull xinfinorg/csc:feature-v0.3.0
+  // docker run -v ${PWD}/:/app/cicd/mnt/ --network generated_docker_net xinfinorg/csc:feature-v0.3.0 full
+  // need to figure what to use instead of ${PWD}, probably need host full path
+
+  await execute(
+    `docker pull xinfinorg/csc:feature-v0.3.0;\n` +
+    `docker run -v ${config.hostPath}/:/app/cicd/mount/ --network docker_net xinfinorg/csc:feature-v0.3.0 full`,
+    callbacks.dataCallback,
+    callbacks.doneCallback
+  );
+
+  //TODO: pass version from some global conf or env
+  //TODO: use detected network name
+
+  return {};
 }

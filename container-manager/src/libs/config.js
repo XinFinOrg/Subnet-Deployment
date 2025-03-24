@@ -3,6 +3,7 @@ const fs = require("fs");
 const yaml = require("js-yaml");
 const path = require("path");
 const mountPath = path.join(__dirname, "../../mount/generated/");
+const { version } = require("../gen/config_gen.js")
 const config = {};
 
 module.exports = config;
@@ -10,7 +11,7 @@ module.exports = config;
 initModule();
 
 function initModule() {
-  const [found, name] = checkFiles();
+  const [found, name] = checkMountPath();
   if (!found) {
     throw Error(`Incomplete mount, did not find: ${name}`);
   }
@@ -20,25 +21,15 @@ function initModule() {
   if (config["hostPath"] === "") {
     throw Error("Incomplete container start, did not find env: HOSTPWD");
   }
+  console.log('init with versions', version)
+  config["version"] = version
 }
 
-function checkFiles() {
-  files = [
-    // "docker-compose.yml",
-    // "common.env",
-    // "contract_deploy.env",
-    // "genesis.json",
-  ];
+function checkMountPath() {
   const shouldExistMount = path.join(mountPath, 'scripts')
   if (!fs.existsSync(shouldExistMount)) {
     //first check folder exists
     return [false, shouldExistMount];
-  }
-  for (let i = 0; i < files.length; i++) {
-    filename = path.join(mountPath, files[i]);
-    if (!fs.existsSync(filename)) {
-      return [false, filename];
-    }
   }
   return [true, ""];
 }

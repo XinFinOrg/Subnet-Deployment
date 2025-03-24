@@ -3,6 +3,9 @@ const instance = axios.create({
   socketPath: "/var/run/docker.sock",
   baseURL: "http://unix:/",
 });
+const fs = require('fs')
+const path = require("path");
+const mountPath = path.join(__dirname, "../../mount/generated/");
 
 module.exports = {
   getState,
@@ -11,11 +14,11 @@ module.exports = {
   checkMining,
 };
 
-const stateInit = {
+const stateGen = {
   NONE: 'NONE',
   INCOMPLETE: 'INCOMPLETE',
   GENERATED: 'GENERATED',
-  CONTRACTS_DEPLOYED: 'CONTRACTS_DEPLOYED', 
+  COMPLETED: 'COMPLETED', 
 }
 const stateSubnet = {
   OFFLINE: 'OFFLINE',
@@ -57,15 +60,14 @@ const stateExplorer={}
 const stateMonitor={}
 
 async function getState() {
-  containers = await getContainersState()
-  // containers = await getSubnetContainers()
-  mineInfo = await checkMining() 
-  // contracts = await checkContractState()
+  const deployState = getStateGen()
+  const containers = await getContainersState()
+  const mineInfo = await checkMining() 
 
   return {
     containers: containers,
     mineInfo: mineInfo,
-    stateGen: stateGen.GENERATED
+    deployState: deployState
   }
 }
 
@@ -229,4 +231,76 @@ function sleepSync(ms) {
   while (Date.now() - start < ms) {
     // Busy-wait loop (blocks the event loop)
   }
+}
+
+function getStateGen(){
+  files = [
+    "gen.env",
+    "docker-compose.yml",
+    "common.env",
+    "contract_deploy.env",
+    "genesis.json",
+  ];
+  let count = 0
+  for (let i = 0; i < files.length; i++) {
+    filename = path.join(mountPath, files[i]);
+    if (fs.existsSync(filename)) count++
+  }
+  
+  if (count == 0) return stateGen.NONE 
+  if (count < files.length) return stateGen.INCOMPLETE
+  
+  const req = readContractReq()
+  if (!isContractDeployComplete(req)){
+    return stateGen.GENERATED
+  } else {
+    return stateGen.COMPLETED
+  }
+}
+
+function readContractReq(){
+  const filepath = path.join(mountPath, 'gen.env')
+  const relayerMode = findENVInFile('RELAYER_MODE', filepath) 
+  const zeroMode = findENVInFile('XDC_ZERO', filepath) 
+  const subswap = findENVInFile('SUBSWAP', filepath) 
+
+  const req = {}
+  if (relayerMode.length != 0){
+    req['relayer'] = relayerMode[0]
+  }
+  if (zeroMode.length != 0){
+    req['zero'] = zeroMode[0]
+  }
+  if (subswap.length != 0){
+    req['subswap'] = subswap[0]
+  }
+  return req
+}
+
+function isContractDeployComplete(req){
+  const filepath = path.join(mountPath, 'common.env')
+  if('relayer' in req){
+    const relayer = findENVInFile('CSC', filepath) //check name
+    if (relayer.length == 0) return false
+  }
+  
+  if('zero' in req){
+    const zero = findENVInFile('ZERO', filepath) //check name
+    if (zero.length == 0) return false
+  }
+  
+  if('subswap' in req){
+    const subswap = findENVInFile('SUBSWAP', filepath) //check name
+    if (subswap.length == 0) return false
+  }
+
+  return true
+}
+
+function findENVInFile(env, filepath){
+  const envFileContent = fs.readFileSync(filepath, 'utf8');
+  const regex = new RegExp(`^${env}=.*`, 'gm');
+  let matches = envFileContent.match(regex);
+  matches = (matches === null) ? [] : matches
+  return matches
 }
