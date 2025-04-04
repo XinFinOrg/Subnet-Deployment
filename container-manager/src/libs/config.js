@@ -3,7 +3,8 @@ const fs = require("fs");
 const yaml = require("js-yaml");
 const path = require("path");
 const mountPath = path.join(__dirname, "../../mount/generated/");
-const { version } = require("../gen/config_gen.js")
+const configModule = require("../gen/config_gen.js")
+const version = configModule.config.version
 const config = {};
 
 module.exports = config;

@@ -1,5 +1,6 @@
 const net = require("net");
-const config = require("./config_gen");
+const configModule = require("./config_gen");
+const config = configModule.config
 Object.freeze(config);
 
 module.exports = {

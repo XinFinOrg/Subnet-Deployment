@@ -9,11 +9,8 @@ async function callStateApi(route, outElementId) {
     let data;
     if (contentType && contentType.includes("application/json")) {
       data = await response.json();
+      // console.log(data)
       adjustStateDivs(data)
-      // display = {
-      //   containers: data.containers,
-      //   mineInfo: data.mineInfo
-      // }
       display = data
       display = JSON.stringify(display, null, 2);
     } else {
@@ -27,13 +24,86 @@ async function callStateApi(route, outElementId) {
   }
 }
 
-function adjustStateDivs(data){
-  // console.log('adjust divs')
-  // console.log(data)
-  if (data.deployState != 'NONE'){
-    const genButton = document.getElementById("gen_button")
-    genButton.disabled = true
+async function generate1(network){
+  console.log('generate1')
+  key = await genAddress()
+  const formData = {
+    'text-subnet-name': 'myxdcsubnet',
+    'text-num-subnet': '1',
+    'text-num-machine': '1',
+    'text-private-ip': '',
+    'text-public-ip': '',
+    'grandmaster-pk': '',
+    'customversion-subnet': '',
+    'customversion-bootnode': '',
+    'customversion-relayer': '',
+    'customversion-stats': '',
+    'customversion-frontend': '',
+    'customversion-csc': '',
+    'customversion-zero': '',
+    pnradio: `pn-radio-${network}`,
+    'parentnet-wallet-pk': key.privateKey,
+    rmradio: 'rm-radio-full',
+    'parentnet-zero-wallet-pk': '',
+    zmradio: 'zm-radio-one',
+    'subnet-wallet-pk': '',
+    'subnet-zero-wallet-pk': ''
   }
+  const response = await fetch('/submit_preconfig',
+     { method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData)
+     });
+  const outdiv = document.getElementById('output1')
+  outdiv.textContent = await response.text()
+}
+
+async function generate3(network){
+  console.log('generate3')
+  parentnetWallet = await genAddress()
+  parentnetZeroWallet = await genAddress()
+  subnetWallet = await genAddress()
+  subnetZeroWallet = await genAddress()
+  const formData = {
+    'text-subnet-name': 'myxdcsubnet',
+    'text-num-subnet': '3',
+    'text-num-machine': '1',
+    'text-private-ip': '',
+    'text-public-ip': '',
+    'grandmaster-pk': '',
+    'customversion-subnet': '',
+    'customversion-bootnode': '',
+    'customversion-relayer': '',
+    'customversion-stats': '',
+    'customversion-frontend': '',
+    'customversion-csc': '',
+    'customversion-zero': '',
+    pnradio: `pn-radio-${network}`,
+    'parentnet-wallet-pk': parentnetWallet.privateKey,
+    rmradio: 'rm-radio-full',
+    'xdczero-checkbox': 'on',
+    'parentnet-zero-wallet-pk': parentnetZeroWallet.privateKey,
+    zmradio: 'zm-radio-bi',
+    'subnet-wallet-pk': subnetWallet.privateKey,
+    'subnet-zero-wallet-pk': subnetZeroWallet.privateKey,
+    'subswap-checkbox': 'on'
+  }
+  const response = await fetch('/submit_preconfig',
+     { method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData)
+     });
+  const outdiv = document.getElementById('output1')
+  outdiv.textContent = await response.text()
+}
+
+async function genAddress() {
+  const response = await fetch('/address', { method: "GET" });
+  return response.json()
 }
 
 async function callStreamApi(route) {
@@ -41,6 +111,7 @@ async function callStreamApi(route) {
   // outputElement.className = 'output';
   collapseHistoryDivs();
   const [outputWrapper, outputElement] = createCollapsibleDiv(route);
+  document.getElementById('history-text').textContent = "History:"
   document.getElementById('history').appendChild(outputWrapper);
   
   // const outputElement = document.getElementById("output");
@@ -110,6 +181,52 @@ function collapseHistoryDivs(){
   const toggleButtonElements = document.getElementsByClassName('toggle-button');
   for (let element of toggleButtonElements) {
       element.textContent = 'Expand'
+  }
+}
+
+function adjustStateDivs(data){
+  console.log(data)
+  if (data.deployState != 'NONE'){
+    // const genButton = document.getElementById("gen_button")
+    // genButton.disabled = true
+    disableButtons('gen-button')
+    showAddresses(data.addressState) 
+  }
+}
+
+function disableButtons(className){
+  const elements = document.querySelectorAll(`.${className}`);
+  elements.forEach(element => {
+    // element.style.display = 'block';
+    element.disabled = true
+  });
+}
+
+function showAddresses(addresses){
+  const parentnetWallet = document.getElementById("parentnet-wallet")
+  const parentnetZeroWallet = document.getElementById("parentnet-zero-wallet")
+  const subnetWallet = document.getElementById("subnet-wallet")
+  const subnetZeroWallet = document.getElementById("subnet-zero-wallet")
+
+  if (addresses.parentnetWallet !== ""){
+    parentnetWallet.textContent = 'Relayer Parentnet Wallet: '+addresses.parentnetWallet
+  } else {
+    parentnetWallet.textContent = ""
+  }
+  if (addresses.parentnetZeroWallet !== ""){
+    parentnetZeroWallet.textContent = 'Relayer Parentnet Zero Wallet: '+addresses.parentnetZeroWallet
+  } else {
+    parentnetZeroWallet.textContent = ""
+  }
+  if (addresses.subnetWallet !== ""){
+    subnetWallet.textContent = 'Relayer Subnet Wallet'+addresses.subnetWallet
+  } else {
+    subnetWallet.textContent = ""
+  }
+  if (addresses.subnetZeroWallet !== ""){
+    subnetZeroWallet.textContent = 'Relayer Subnet Zero Wallet'+addresses.subnetZeroWallet
+  } else {
+    subnetZeroWallet.textContent = ""
   }
 }
 

@@ -1,4 +1,6 @@
 const axios = require("axios");
+const { ethers } = require('ethers');
+const { getAccountPath } = require("ethers");
 const instance = axios.create({
   socketPath: "/var/run/docker.sock",
   baseURL: "http://unix:/",
@@ -12,6 +14,7 @@ module.exports = {
   getSubnetContainers,
   getContainersState,
   checkMining,
+  getFaucetParams,
 };
 
 const stateGen = {
@@ -61,13 +64,15 @@ const stateMonitor={}
 
 async function getState() {
   const deployState = getStateGen()
+  const addressState = getAddressInfo()
   const containers = await getContainersState()
   const mineInfo = await checkMining() 
 
   return {
     containers: containers,
     mineInfo: mineInfo,
-    deployState: deployState
+    deployState: deployState,
+    addressState: addressState,
   }
 }
 
@@ -251,10 +256,41 @@ function getStateGen(){
   if (count < files.length) return stateGen.INCOMPLETE
   
   const req = readContractReq()
-  if (!isContractDeployComplete(req)){
-    return stateGen.GENERATED
-  } else {
+  if (isContractDeployComplete(req)){
     return stateGen.COMPLETED
+  } else {
+    return stateGen.GENERATED
+  }
+}
+
+function getAddressInfo(){
+  const filepath = path.join(mountPath, 'common.env')
+  if (!fs.existsSync(filepath)) return {}
+  let parentnetWallet = findENVInFile('PARENTNET_WALLET_PK', filepath) 
+  parentnetWallet = (parentnetWallet.length > 0) ? pkToAddress(parentnetWallet[0]): ""
+  let parentnetZeroWallet = findENVInFile('PARENTNET_ZERO_WALLET_PK', filepath) 
+  parentnetZeroWallet = (parentnetZeroWallet.length > 0) ? pkToAddress(parentnetZeroWallet[0]): ""
+  let subnetWallet = findENVInFile('SUBNET_WALLET_PK', filepath)
+  subnetWallet = (subnetWallet.length > 0) ? pkToAddress(subnetWallet[0]): ""
+  let subnetZeroWallet = findENVInFile('SUBNET_ZERO_WALLET_PK', filepath)
+  subnetZeroWallet = (subnetZeroWallet.length > 0) ? pkToAddress(subnetZeroWallet[0]): ""
+
+  return {
+    parentnetWallet: parentnetWallet,
+    parentnetZeroWallet: parentnetZeroWallet,
+    subnetWallet: subnetWallet,
+    subnetZeroWallet: subnetZeroWallet
+  }
+}
+
+function pkToAddress(pk){
+  try {
+    const privateKey = pk.split('=')[1]
+    const wallet = new ethers.Wallet(privateKey);
+    const address = wallet.address;
+    return address;
+  } catch (error) {
+    return "";
   }
 }
 
@@ -280,7 +316,7 @@ function readContractReq(){
 function isContractDeployComplete(req){
   const filepath = path.join(mountPath, 'common.env')
   if('relayer' in req){
-    const relayer = findENVInFile('CSC', filepath) //check name
+    const relayer = findENVInFile('CHECKPOINT_CONTRACT', filepath) //check name
     if (relayer.length == 0) return false
   }
   
@@ -303,4 +339,16 @@ function findENVInFile(env, filepath){
   let matches = envFileContent.match(regex);
   matches = (matches === null) ? [] : matches
   return matches
+}
+
+function getFaucetParams(){
+  const keysFile = fs.readFileSync(path.join(mountPath, 'keys.json'), 'utf8'); 
+  const gmKey = JSON.parse(keysFile).Grandmaster.PrivateKey
+  const commonPath = path.join(mountPath, 'common.env')
+  const url = findENVInFile('SUBNET_URL', commonPath)[0].split('=')[1]
+
+  return {
+    subnetUrl: url,
+    gmKey: gmKey
+  }
 }

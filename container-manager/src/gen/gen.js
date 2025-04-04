@@ -1,13 +1,15 @@
 const fs = require("fs");
 const yaml = require("js-yaml");
 const { exit } = require("process");
-const config = require("./config_gen");
+const configModule = require("./config_gen");
 const gen_compose = require("./gen_compose");
 const gen_env = require("./gen_env");
 const gen_other = require("./gen_other");
 
+const config = configModule.config
 Object.freeze(config);
-// console.log(config)
+console.log('config', config)
+configModule.configSanityCheck(config)
 
 // const num_machines = config.num_machines
 // const num_subnet = config.num_subnet

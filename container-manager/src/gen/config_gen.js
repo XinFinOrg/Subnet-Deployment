@@ -58,11 +58,15 @@ const config = {
   },
 };
 
-if (configSanityCheck(config) === true) {
-  module.exports = config;
-} else {
-  console.log("bad config init file, please check again");
-  process.exit();
+// if (configSanityCheck(config) === true) {
+  // module.exports = config;
+// } else {
+  // console.log("bad config init file, please check again");
+  // process.exit();
+// }
+module.exports = { 
+  config,
+  configSanityCheck
 }
 
 function validatePK(private_key) {

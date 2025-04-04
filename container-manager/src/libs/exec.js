@@ -4,6 +4,7 @@ const path = require("path");
 const mountPath = path.join(__dirname, "../../mount/generated/");
 const config = require("./config");
 const fs = require('fs')
+const ethers = require("ethers");
 
 module.exports = {
   startComposeProfile,
@@ -13,6 +14,7 @@ module.exports = {
   startSubnetGradual,
   removeSubnet,
   generate,
+  processTransfer,
 };
 
 const streamExecOutput = (data) => {
@@ -285,12 +287,62 @@ RELAYER_MODE=${relayer_mode}
   return content
 }
 
+async function processTransfer(provider, fromWallet, toAddress, amount) {
+  // fromPK = inputs[2];
+  // toAddress = inputs[3];
+  // amount = inputs[4];
+  // const provider = new ethers.JsonRpcProvider(subnetURL);
+  // const fromWallet = new ethers.Wallet(fromPK, provider);
+  let tx = {
+    to: toAddress,
+    value: ethers.parseEther(amount),
+  };
+
+  try{
+    await provider._detectNetwork();
+  } catch (error){
+    throw Error("Cannot connect to RPC")
+  }
+
+  let sendPromise = fromWallet.sendTransaction(tx);
+  txHash = await sendPromise.then((tx) => {
+    return tx.hash;
+  });
+  console.log("TX submitted, confirming TX execution, txhash:", txHash);
+
+  let receipt;
+  let count = 0;
+  while (!receipt) {
+    count++;
+    // console.log("tx receipt check loop", count);
+    if (count > 60) {
+      throw Error("Timeout: transaction did not execute after 60 seconds");
+    }
+    await sleep(1000);
+    let receipt = await provider.getTransactionReceipt(txHash);
+    if (receipt && receipt.status == 1) {
+      console.log("Successfully transferred", amount, "subnet token");
+      let fromBalance = await provider.getBalance(fromWallet.address);
+      fromBalance = ethers.formatEther(fromBalance);
+      let toBalance = await provider.getBalance(toAddress);
+      toBalance = ethers.formatEther(toBalance);
+      console.log("Current balance");
+      console.log(`${fromWallet.address}: ${fromBalance}`);
+      console.log(`${toAddress}: ${toBalance}`);
+      return {
+        fromBalance: fromBalance,
+        toBalance: toBalance,
+        txHash: txHash
+      }
+    }
+  }
+}
 
 async function genGenesis(callbacks) {
   // docker pull xinfinorg/csc:feature-v0.3.0
   // docker run -v ${PWD}/:/app/cicd/mnt/ --network generated_docker_net xinfinorg/csc:feature-v0.3.0 full
   // need to figure what to use instead of ${PWD}, probably need host full path
-
+  console.log(config)
   await execute(
     `docker pull xinfinorg/csc:feature-v0.3.0;\n` +
     `docker run -v ${config.hostPath}/:/app/cicd/mount/ --network docker_net xinfinorg/csc:feature-v0.3.0 full`,
@@ -302,4 +354,12 @@ async function genGenesis(callbacks) {
   //TODO: use detected network name
 
   return {};
+}
+
+function findENVInFile(env, filepath){
+  const envFileContent = fs.readFileSync(filepath, 'utf8');
+  const regex = new RegExp(`^${env}=.*`, 'gm');
+  let matches = envFileContent.match(regex);
+  matches = (matches === null) ? [] : matches
+  return matches
 }

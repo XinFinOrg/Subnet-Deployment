@@ -1,11 +1,11 @@
 const fs = require("fs");
 const yaml = require("js-yaml");
 const { exit } = require("process");
-const config = require("./config_gen");
 const gen_compose = require("./gen_compose");
 const gen_env = require("./gen_env");
 const gen_other = require("./gen_other");
-
+const configModule = require("./config_gen");
+const config = configModule.config
 Object.freeze(config);
 // console.log(config)
 

@@ -18,6 +18,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({
   extended: true
 })) 
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
@@ -92,6 +93,18 @@ app.post("/submit", (req, res) => {
   }
 });
 
+app.post("/submit_preconfig", (req, res) => {
+  console.log("/submit called")
+  const [valid, genOut] = exec.generate(req.body)
+
+  if (!valid){
+    res.send('failed to generate')
+  } else {
+    res.send('success')
+  }
+});
+
+
 app.get("/address", (req,res) => {
   const randomWallet = ethers.Wallet.createRandom()
   res.json({
@@ -104,6 +117,39 @@ app.get("/address", (req,res) => {
 app.get("/faucet", (req, res) => {
   res.render("faucet/index.pug", {
   });
+});
+
+app.get("/faucet_subnet", async function(req, res) {
+  console.log('/faucet_subnet called')
+  console.log(req.query);
+  try {
+    const { subnetUrl, gmKey } = state.getFaucetParams()
+    const provider = new ethers.JsonRpcProvider(subnetUrl);
+    const fromWallet = new ethers.Wallet(gmKey, provider);
+    const fromPK = '123'
+    toAddress = req.query.dest
+    amount = req.query.amount
+    if (!ethers.isAddress(toAddress)) throw Error("Invalid destination address")
+    if (isNaN(Number(amount)) || parseFloat(amount) <= 0 || amount == "") throw Error("Invalid Amount")
+    if (parseFloat(amount) > 1_000_000_000) throw Error("Faucet request over 1,000,000,000 is not allowed")
+    let inputs = ["", "", fromPK, toAddress, amount];
+    const {fromBalance, toBalance, txHash} = await exec.processTransfer(provider, fromWallet, toAddress, amount);
+    res.json({
+      success: true,
+      sourceAddress: fromWallet.address,
+      destAddress: toAddress,
+      sourceBalance: fromBalance,
+      destBalance: toBalance,
+      txHash: txHash
+    })
+  } catch (error) {
+    console.log(error);
+    console.log(error.message)
+    res.json({
+      success: false,
+      message: error.message 
+    })
+  }
 });
 
 
