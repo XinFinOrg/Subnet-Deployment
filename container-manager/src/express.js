@@ -48,9 +48,27 @@ app.get("/start_subnet_slow", async (req, res) => {
   await exec.startSubnet("machine1", setupRes(req,res));
 });
 
-app.get("/deploy_csc", async (req, res) => {
-  console.log("/deploy_csc called");
-  await exec.deployCSC(setupRes(req,res));
+app.get("/deploy_csc_lite", async (req, res) => {
+  console.log("/deploy_csc_lite called");
+  await exec.deployCSC('lite', setupRes(req,res));
+});
+app.get("/deploy_csc_full", async (req, res) => {
+  console.log("/deploy_csc_full called");
+  await exec.deployCSC('full', setupRes(req,res));
+});
+app.get("/deploy_csc_reversefull", async (req, res) => {
+  console.log("/deploy_csc_reversefull called");
+  await exec.deployCSC('reversefull', setupRes(req,res));
+});
+
+app.get("/deploy_zero", async (req, res) => {
+  console.log("/deploy_zero called");
+  await exec.deployZero(setupRes(req,res))
+});
+
+app.get("/deploy_subswap", async (req, res) => {
+  console.log("/deploy_subswap called");
+  await exec.deploySubswap(setupRes(req,res))
 });
 
 app.get("/start_services", async (req, res) => {

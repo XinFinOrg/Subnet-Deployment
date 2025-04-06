@@ -63,8 +63,7 @@ const stateExplorer={}
 const stateMonitor={}
 
 async function getState() {
-  const deployState = getStateGen()
-  const addressState = getAddressInfo()
+  const [deployState, requireContracts] = getStateGen()
   const containers = await getContainersState()
   const mineInfo = await checkMining() 
 
@@ -72,7 +71,7 @@ async function getState() {
     containers: containers,
     mineInfo: mineInfo,
     deployState: deployState,
-    addressState: addressState,
+    requirements: requireContracts,
   }
 }
 
@@ -252,19 +251,59 @@ function getStateGen(){
     if (fs.existsSync(filename)) count++
   }
   
-  if (count == 0) return stateGen.NONE 
-  if (count < files.length) return stateGen.INCOMPLETE
+  if (count == 0) return [stateGen.NONE , null]
+  if (count < files.length) return [stateGen.INCOMPLETE, null]
   
-  const req = readContractReq()
+  const req = readContractRequirement()
+  const addresses = readAddressInfo()
+  const subnetConfig = readConfig()
+  const details = {
+    requireContracts: req,
+    addresses: addresses,
+    subnetConfig: subnetConfig
+  }
   if (isContractDeployComplete(req)){
-    return stateGen.COMPLETED
+    return [stateGen.COMPLETED, details]
   } else {
-    return stateGen.GENERATED
+    return [stateGen.GENERATED, details]
   }
 }
 
-function getAddressInfo(){
-  const filepath = path.join(mountPath, 'common.env')
+
+
+function pkToAddress(pk){
+  try {
+    const privateKey = pk.split('=')[1]
+    const wallet = new ethers.Wallet(privateKey);
+    const address = wallet.address;
+    return address;
+  } catch (error) {
+    return "";
+  }
+}
+
+function readContractRequirement(){
+  const filepath = path.join(mountPath, 'gen.env')
+  if (!fs.existsSync(filepath)) return {}
+  const relayerMode = findENVInFile('RELAYER_MODE', filepath) 
+  const zeroMode = findENVInFile('XDC_ZERO', filepath) 
+  const subswap = findENVInFile('SUBSWAP', filepath) 
+
+  const req = {}
+  if (relayerMode.length != 0){
+    req['relayer'] = relayerMode[0].split('=')[1]
+  }
+  if (zeroMode.length != 0){
+    req['zero'] = zeroMode[0].split('=')[1]
+  }
+  if (subswap.length != 0){
+    req['subswap'] = subswap[0].split('=')[1]
+  }
+  return req
+}
+
+function readAddressInfo(){
+  const filepath = path.join(mountPath, 'gen.env')
   if (!fs.existsSync(filepath)) return {}
   let parentnetWallet = findENVInFile('PARENTNET_WALLET_PK', filepath) 
   parentnetWallet = (parentnetWallet.length > 0) ? pkToAddress(parentnetWallet[0]): ""
@@ -283,34 +322,25 @@ function getAddressInfo(){
   }
 }
 
-function pkToAddress(pk){
-  try {
-    const privateKey = pk.split('=')[1]
-    const wallet = new ethers.Wallet(privateKey);
-    const address = wallet.address;
-    return address;
-  } catch (error) {
-    return "";
-  }
-}
-
-function readContractReq(){
+function readConfig(){
   const filepath = path.join(mountPath, 'gen.env')
-  const relayerMode = findENVInFile('RELAYER_MODE', filepath) 
-  const zeroMode = findENVInFile('XDC_ZERO', filepath) 
-  const subswap = findENVInFile('SUBSWAP', filepath) 
+  if (!fs.existsSync(filepath)) return {}
 
-  const req = {}
-  if (relayerMode.length != 0){
-    req['relayer'] = relayerMode[0]
+  let networkName = findENVInFile('NETWORK_NAME', filepath)
+  networkName = (networkName.length > 0) ? networkName[0].split('=')[1] : ""
+  let numSubnet = findENVInFile('NUM_SUBNET', filepath) 
+  numSubnet = (numSubnet.length > 0) ? numSubnet[0].split('=')[1] : ""
+  let numMachine = findENVInFile('NUM_MACHINE', filepath) 
+  numMachine = (numMachine.length > 0) ? numMachine[0].split('=')[1] : ""
+  let parentnet = findENVInFile('PARENTNET', filepath)
+  parentnet = (parentnet.length > 0) ? parentnet[0].split('=')[1] : ""
+
+  return {
+    networkName: networkName,
+    numSubnet: numSubnet,
+    numMachine: numMachine,
+    parentnet: parentnet
   }
-  if (zeroMode.length != 0){
-    req['zero'] = zeroMode[0]
-  }
-  if (subswap.length != 0){
-    req['subswap'] = subswap[0]
-  }
-  return req
 }
 
 function isContractDeployComplete(req){

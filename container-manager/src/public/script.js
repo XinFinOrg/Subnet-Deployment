@@ -185,12 +185,14 @@ function collapseHistoryDivs(){
 }
 
 function adjustStateDivs(data){
-  console.log(data)
   if (data.deployState != 'NONE'){
     // const genButton = document.getElementById("gen_button")
     // genButton.disabled = true
     disableButtons('gen-button')
-    showAddresses(data.addressState) 
+    showAddresses(data.requirements.addresses)
+    showCopyInstruction(data.requirements.subnetConfig)
+    showFaucet(data.requirements)
+    enableContractButtons(data.requirements.requireContracts)
   }
 }
 
@@ -200,6 +202,35 @@ function disableButtons(className){
     // element.style.display = 'block';
     element.disabled = true
   });
+}
+
+function enableButtonClass(className){
+  const elements = document.querySelectorAll(`.${className}`);
+  elements.forEach(element => {
+    element.disabled = false
+  });
+}
+
+function enableContractButtons(contracts){
+
+  const cscLiteButton = document.getElementById('button-csc-lite')
+  const cscFullButton = document.getElementById('button-csc-full')
+  const reverseCscButton = document.getElementById('button-reverse-csc')
+  // const zeroButton = document.getElementById('button-zero') //retire this concept, only subswap or no subswap
+  const subswapButton = document.getElementById('button-subswap')
+
+  if (contracts.relayer == 'lite'){
+    cscLiteButton.disabled = false
+  }
+  if (contracts.relayer == 'full'){
+    cscFullButton.disabled = false
+  }
+  if (contracts.zero == 'bi-directional'){
+    reverseCscButton.diabled = false
+  } 
+  if (contracts.subswap == 'true'){
+    subswapButton.disabled = false
+  }
 }
 
 function showAddresses(addresses){
@@ -230,6 +261,38 @@ function showAddresses(addresses){
   }
 }
 
+function showCopyInstruction(config){
+  if (config.numMachine != "" && parseInt(config.numMachine) > 1){
+  const copyInstruction = document.getElementById("copy-instruction")
+  copyInstruction.innerHTML =  `
+Copy files docker-compose.yml, genesis.json, config/subnetX.env to other machines<br>
+Then start subnet nodes on other machines:<br>
+docker compose --profile machineX pull;<br>
+docker compose --profile machineX up -d;<br>
+`
+  }
+}
+
+function showFaucet(requirements){
+  console.log(requirements)
+  if (requirements.subnetConfig.parentnet == "testnet"){
+    const infoDiv = document.getElementById("mainnet-testnet-info")
+    infoDiv.textContent = "3a. Add Testnet balance to: "
+    const testnetFaucetInfo = document.getElementById("testnet-faucet-info")
+    testnetFaucetInfo.style.display = "block"
+  }
+  if (requirements.subnetConfig.parentnet == "mainnet"){
+    const infoDiv = document.getElementById("mainnet-testnet-info")
+    infoDiv.textContent = "3a. Add Mainnet balance to: "
+
+  }
+  if (requirements.addresses.subnetWallet != "" || requirements.addresses.subnetZeroWallet != ""){
+    const subnetFaucetInfo = document.getElementById("subnet-faucet-info")
+    subnetFaucetInfo.style.display = "block"
+  }
+ 
+
+}
 async function fetchLoop(){
   await callStateApi('/state', 'state')
   setInterval(()=>{

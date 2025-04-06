@@ -10,11 +10,14 @@ module.exports = {
   startComposeProfile,
   stopComposeProfile,
   deployCSC,
+  deployZero,
+  deploySubswap,
   executeTest,
   startSubnetGradual,
   removeSubnet,
   generate,
   processTransfer,
+  
 };
 
 const streamExecOutput = (data) => {
@@ -69,30 +72,42 @@ async function removeSubnet(profile, callbacks){
 
 }
 
-async function deployCSC(callbacks) {
-  // docker pull xinfinorg/csc:feature-v0.3.0
-  // docker run -v ${PWD}/:/app/cicd/mnt/ --network generated_docker_net xinfinorg/csc:feature-v0.3.0 full
-  // need to figure what to use instead of ${PWD}, probably need host full path
+async function deployCSC(mode, callbacks) {
+  if (!['lite', 'full', 'reversefull'].includes(mode)) {
+    console.error('invalid csc mode', mode)
+    return {}
+  }
 
   await execute(
-    `docker pull xinfinorg/csc:feature-v0.3.0;\n` +
-    `docker run -v ${config.hostPath}/:/app/cicd/mount/ --network docker_net xinfinorg/csc:feature-v0.3.0 full`,
+    `docker pull xinfinorg/csc:${config.version.csc};\n` +
+    `docker run -v ${config.hostPath}/:/app/cicd/mount/ --network docker_net xinfinorg/csc:${config.version.csc} ${mode}`,
     callbacks.dataCallback,
     callbacks.doneCallback
   );
-
-  //TODO: pass version from some global conf or env
-  //TODO: use detected network name
 
   return {};
 }
 
 async function deploySubswap(callbacks){
+  await execute(
+    `docker pull xinfinorg/xdc-zero:${config.version.zero};\n` +
+    `docker run -v ${config.hostPath}/:/app/cicd/mount/ --network docker_net xinfinorg/xdc-zero:${config.version.zero} zeroandsubswap`,
+    callbacks.dataCallback,
+    callbacks.doneCallback
+  );
 
+  return {};
 }
 
 async function deployZero(callbacks){
-  
+  await execute(
+    `docker pull xinfinorg/xdc-zero:${config.version.zero};\n` +
+    `docker run -v ${config.hostPath}/:/app/cicd/mount/ --network docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain`,
+    callbacks.dataCallback,
+    callbacks.doneCallback
+  );
+
+  return {}; 
 }
 
 async function executeTest(command, outputHandler, doneHandler) {
@@ -336,24 +351,6 @@ async function processTransfer(provider, fromWallet, toAddress, amount) {
       }
     }
   }
-}
-
-async function genGenesis(callbacks) {
-  // docker pull xinfinorg/csc:feature-v0.3.0
-  // docker run -v ${PWD}/:/app/cicd/mnt/ --network generated_docker_net xinfinorg/csc:feature-v0.3.0 full
-  // need to figure what to use instead of ${PWD}, probably need host full path
-  console.log(config)
-  await execute(
-    `docker pull xinfinorg/csc:feature-v0.3.0;\n` +
-    `docker run -v ${config.hostPath}/:/app/cicd/mount/ --network docker_net xinfinorg/csc:feature-v0.3.0 full`,
-    callbacks.dataCallback,
-    callbacks.doneCallback
-  );
-
-  //TODO: pass version from some global conf or env
-  //TODO: use detected network name
-
-  return {};
 }
 
 function findENVInFile(env, filepath){
