@@ -11,11 +11,10 @@ body {
 }
 
 .body-wrap{
-  /* background-color: red; */
   display:flex;
-  /* align-items: center; */
-  /* justify-content: center; */
-  
+  background-color: rgba(0, 0, 0, 0);
+  z-index: 9999; 
+  pointer-events: none;
 }
 
 .container {
@@ -62,12 +61,9 @@ h1 {
 .button.red:hover {
   background-color: #b30000;
 }
-.button.gen-button-hidden{
+.button.contract-deploy{
   display: none;
 }
-/* .button.contract-deploy{
-
-} */
 .toggle-button {
   background-color: #007bff;
   color: white;

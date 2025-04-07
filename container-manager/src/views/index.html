@@ -7,13 +7,12 @@
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body onload="fetchLoop()">
-  <div class="body-wrap">
+  <div id="body-wrap" class="body-wrap">
     <div class="container">
       <h1>Subnet Deployment Wizard</h1>
       <div class="left-aligned">
         <div>
           <div>1. Select Subnet Configuration</div> 
-          <!-- <button id="gen_button" class="button" onclick="toggleClass('gen-button-hidden')">Generate Configs</button> -->
           <div>
             <button id="gen_button_1_tn" class="button gen-button" onclick="generate1('testnet')">1-Node Subnet (Testnet)</button>
             <button id="gen_button_3_tn" class="button gen-button" onclick="generate3('testnet')">3-Node Subnet with Subswap (Testnet)</button>
@@ -30,31 +29,32 @@
           <div id="copy-instruction"></div>
           <div>2. Start Subnet</div>
           <button id="start_button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+          <button id="stop_button" class="button" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
         </div>
         <div >
           <div id="mainnet-testnet-info">3a. Add Mainnet/Testnet balance to: </div>
           <div id="parentnet-wallet"></div>
           <div id="parentnet-zero-wallet"></div>
           <div id="testnet-faucet-info">
-            <div>Testnet Faucets: </div>
+            <div>&emsp;Testnet Faucets: </div>
             <div>
-              <a href="https://faucet.blocksscan.io/ " target="_blank">Testnet(Apothem) Faucet by BlocksScan</a> 
+              &emsp;&emsp;<a href="https://faucet.blocksscan.io/ " target="_blank">Testnet(Apothem) Faucet by BlocksScan</a> 
             </div>
             <div>
-              <a href="https://faucet.apothem.network/" target="_blank">Testnet(Apothem) Faucet</a> 
+              &emsp;&emsp;<a href="https://faucet.apothem.network/" target="_blank">Testnet(Apothem) Faucet</a> 
             </div>
           </div>
+          <br>
         </div>
         <div id="subnet-faucet-info">
           <div>3b. Add Subnet balance to: </div>
-          <a href="/faucet" target="_blank">Subnet Faucet</a> 
           <div id="subnet-wallet"></div>
           <div id="subnet-zero-wallet"></div>
+          &emsp;<a href="/faucet" target="_blank">Subnet Faucet</a>
         </div>
-
+        <br>
         <div>
-          <div>4a. deploy csc</div>
-          <div>4b. deploy subswap</div>
+          <div>4. Deploy Smart Contracts</div>
           <button id="button-csc-lite" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_lite', 'output')">Deploy CSC Lite</button>
           <button id="button-csc-full" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_full', 'output')">Deploy CSC Full</button>
           <button id="button-reverse-csc" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_reversefull', 'output')">Deploy CSC Reverse</button>
@@ -67,6 +67,7 @@
         </div>
         <div>
           <div>6. start optional</div>
+          <div>subswap frontend</div>
           <div>explorer</div>
           <div>monitor</div>
         </div>
@@ -78,7 +79,7 @@
 
     <div class="container">
       <h1>Status</h1>
-      <div id="state" class="output-status" >Status: </div>
+      <div id="state" class="output-status" >Status: Loading...</div>
     </div>
   </div>
 

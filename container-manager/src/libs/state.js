@@ -9,6 +9,7 @@ const fs = require('fs')
 const path = require("path");
 const mountPath = path.join(__dirname, "../../mount/generated/");
 
+
 module.exports = {
   getState,
   getSubnetContainers,
@@ -29,38 +30,14 @@ const stateSubnet = {
   STALLED: 'STALLED',
   MINING: 'MINING'
 }
+let globalMiningState = stateSubnet.OFFLINE
+let globalBlockHeight = Infinity
 const stateService = {
   OFFLINE: 'OFFLINE',
   ERROR: 'ERROR',
   DEPLOYED: 'DEPLOYED'
 }
-const stateContractMode = {
-  LITE: 'LITE',
-  FULL: 'FULL',
-  ZERO_BIDIRECTIONAL: 'ZERO_BIDIRECTIONAL',
-  ZERO_ONEDIRECTIONAL: 'ZERO_ONEDIRECTIONAL',
-  SUBSWAP: 'SUBSWAP',
-}
-const relayerMode = {
-  LITE: 'LITE',
-  FULL: 'FULL'
-}
-const zeroMode = {
-  NONE: 'NONE',
-  ZERO_BIDIRECTIONAL: 'ZERO_BIDIRECTIONAL',
-  ZERO_ONEDIRECTIONAL: 'ZERO_ONEDIRECTIONAL',
-}
-const subswapMode = {
-  NONE: 'NONE',
-  SUBSWAP: 'SUBSWAP'
-}
-const stateContract = {
-  NONE: 'NONE',
-  DEPLOYED: 'DEPLOYED'
-}
 
-const stateExplorer={}
-const stateMonitor={}
 
 async function getState() {
   const [deployState, requireContracts] = getStateGen()
@@ -140,6 +117,7 @@ async function checkMining() {
     }
   }
   return {
+    state: globalMiningState,
     blocks: blockHeights,
     peers: peerCounts,
   };
@@ -167,6 +145,10 @@ async function checkBlock(containerIP, containerPort) {
     }
     let block = response.data.result.Number;
     if (block == null) block = 0;
+    if (containerIP == "192.168.25.11"){
+      globalMiningState = (block > globalBlockHeight) ? stateSubnet.MINING : stateSubnet.STALLED
+      globalBlockHeight = block
+    }
     return block;
   } catch (error) {
     console.log(error.code);
@@ -256,9 +238,11 @@ function getStateGen(){
   
   const req = readContractRequirement()
   const addresses = readAddressInfo()
+  const contracts = readDeployedContracts()
   const subnetConfig = readConfig()
   const details = {
     requireContracts: req,
+    deployedContracts: contracts,
     addresses: addresses,
     subnetConfig: subnetConfig
   }
@@ -319,6 +303,33 @@ function readAddressInfo(){
     parentnetZeroWallet: parentnetZeroWallet,
     subnetWallet: subnetWallet,
     subnetZeroWallet: subnetZeroWallet
+  }
+}
+
+function readDeployedContracts(){
+  const filepath = path.join(mountPath, 'common.env')
+  if (!fs.existsSync(filepath)) return {}
+
+  let csc = findENVInFile('CHECKPOINT_CONTRACT', filepath)
+  csc = (csc.length > 0) ? csc[0].split('=')[1] : "" 
+  let reverseCsc = findENVInFile('REVERSE_CHECKPOINT_CONTRACT', filepath)
+  reverseCsc = (reverseCsc.length > 0) ? reverseCsc[0].split('=')[1] : "" 
+  let zeroContract = findENVInFile('ZERO_CONTRACT', filepath)  //checkname 
+  zeroContract = (zeroContract.length > 0) ? zeroContract[0].split('=')[1] : ""
+  let reverseZeroContract = findENVInFile('REVERSE_ZERO_CONTRACT', filepath)  //checkname
+  reverseZeroContract = (reverseZeroContract.length > 0) ? reverseZeroContract[0].split('=')[1] : ""
+  let parentnetApp = findENVInFile('PARENTNET_APP', filepath) 
+  parentnetApp = (parentnetApp.length > 0) ? parentnetApp[0].split('=')[1] : ""
+  let subnetApp = findENVInFile('SUBNET_APP', filepath) 
+  subnetApp = (subnetApp.length > 0) ? subnetApp[0].split('=')[1] : ""
+
+  return {
+    csc: csc,
+    reverseCsc: reverseCsc,
+    zeroContract: zeroContract,
+    reverseZeroContract: reverseZeroContract,
+    parentnetApp: parentnetApp,
+    subnetApp: subnetApp
   }
 }
 

@@ -9,7 +9,6 @@ async function callStateApi(route, outElementId) {
     let data;
     if (contentType && contentType.includes("application/json")) {
       data = await response.json();
-      // console.log(data)
       adjustStateDivs(data)
       display = data
       display = JSON.stringify(display, null, 2);
@@ -150,6 +149,7 @@ function createCollapsibleDiv(route){
   toggleButton.className = 'toggle-button';
   toggleButton.textContent = 'Collapse';
   buttonDiv.appendChild(command)
+  buttonDiv.appendChild(document.createTextNode(" "));
   buttonDiv.appendChild(toggleButton)
   newDiv.appendChild(buttonDiv);
 
@@ -186,14 +186,21 @@ function collapseHistoryDivs(){
 
 function adjustStateDivs(data){
   if (data.deployState != 'NONE'){
-    // const genButton = document.getElementById("gen_button")
-    // genButton.disabled = true
     disableButtons('gen-button')
+    checkStarted(data.mineInfo)
     showAddresses(data.requirements.addresses)
     showCopyInstruction(data.requirements.subnetConfig)
     showFaucet(data.requirements)
-    enableContractButtons(data.requirements.requireContracts)
+    unhideContractButtons(data.requirements.requireContracts)
+    disableContractButtons(data.requirements.deployedContracts) 
   }
+
+  allowClick()
+}
+
+function allowClick(){
+  const bodyWrap = document.getElementById('body-wrap');
+  bodyWrap.style.pointerEvents = 'auto';
 }
 
 function disableButtons(className){
@@ -204,6 +211,14 @@ function disableButtons(className){
   });
 }
 
+function checkStarted(state){
+  if (state == "OFFLINE" || state == "STALLED" || state == "ERROR"){
+    document.getElementById("start_button").disabled = false
+  } else {
+    document.getElementById("start_button").disabled = true
+  }
+}
+
 function enableButtonClass(className){
   const elements = document.querySelectorAll(`.${className}`);
   elements.forEach(element => {
@@ -211,8 +226,7 @@ function enableButtonClass(className){
   });
 }
 
-function enableContractButtons(contracts){
-
+function unhideContractButtons(contracts){
   const cscLiteButton = document.getElementById('button-csc-lite')
   const cscFullButton = document.getElementById('button-csc-full')
   const reverseCscButton = document.getElementById('button-reverse-csc')
@@ -221,15 +235,37 @@ function enableContractButtons(contracts){
 
   if (contracts.relayer == 'lite'){
     cscLiteButton.disabled = false
+    cscLiteButton.style.display = 'block'
   }
   if (contracts.relayer == 'full'){
     cscFullButton.disabled = false
+    cscFullButton.style.display = 'block'
   }
   if (contracts.zero == 'bi-directional'){
-    reverseCscButton.diabled = false
+    reverseCscButton.disabled = false
+    reverseCscButton.style.display = 'block'
   } 
   if (contracts.subswap == 'true'){
     subswapButton.disabled = false
+    subswapButton.style.display = 'block'
+  }
+}
+
+function disableContractButtons(contracts){
+  const cscLiteButton = document.getElementById('button-csc-lite')
+  const cscFullButton = document.getElementById('button-csc-full')
+  const reverseCscButton = document.getElementById('button-reverse-csc')
+  const subswapButton = document.getElementById('button-subswap')
+
+  if (contracts.csc != ""){
+    cscLiteButton.disabled = true
+    cscFullButton.disabled = true
+  }
+  if (contracts.reverseCsc != ""){
+    reverseCscButton.disabled = true
+  }
+  if(contracts.parentnetApp != "" && contracts.subnetApp != ""){
+    subswapButton.disabled = true
   }
 }
 
@@ -240,24 +276,24 @@ function showAddresses(addresses){
   const subnetZeroWallet = document.getElementById("subnet-zero-wallet")
 
   if (addresses.parentnetWallet !== ""){
-    parentnetWallet.textContent = 'Relayer Parentnet Wallet: '+addresses.parentnetWallet
+    parentnetWallet.innerHTML = '&emsp;Relayer Parentnet Wallet: '+addresses.parentnetWallet
   } else {
-    parentnetWallet.textContent = ""
+    parentnetWallet.innerHTML = ""
   }
   if (addresses.parentnetZeroWallet !== ""){
-    parentnetZeroWallet.textContent = 'Relayer Parentnet Zero Wallet: '+addresses.parentnetZeroWallet
+    parentnetZeroWallet.innerHTML = '&emsp;Relayer Parentnet Zero Wallet: '+addresses.parentnetZeroWallet
   } else {
-    parentnetZeroWallet.textContent = ""
+    parentnetZeroWallet.innerHTML = ""
   }
   if (addresses.subnetWallet !== ""){
-    subnetWallet.textContent = 'Relayer Subnet Wallet'+addresses.subnetWallet
+    subnetWallet.innerHTML = '&emsp;Relayer Subnet Wallet: '+addresses.subnetWallet
   } else {
-    subnetWallet.textContent = ""
+    subnetWallet.innerHTML = ""
   }
   if (addresses.subnetZeroWallet !== ""){
-    subnetZeroWallet.textContent = 'Relayer Subnet Zero Wallet'+addresses.subnetZeroWallet
+    subnetZeroWallet.innerHTML = '&emsp;Relayer Subnet Zero Wallet: '+addresses.subnetZeroWallet
   } else {
-    subnetZeroWallet.textContent = ""
+    subnetZeroWallet.innerHTML = ""
   }
 }
 
@@ -274,7 +310,6 @@ docker compose --profile machineX up -d;<br>
 }
 
 function showFaucet(requirements){
-  console.log(requirements)
   if (requirements.subnetConfig.parentnet == "testnet"){
     const infoDiv = document.getElementById("mainnet-testnet-info")
     infoDiv.textContent = "3a. Add Testnet balance to: "
