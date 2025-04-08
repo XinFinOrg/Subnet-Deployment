@@ -24,19 +24,6 @@ const stateGen = {
   GENERATED: 'GENERATED',
   COMPLETED: 'COMPLETED', 
 }
-const stateSubnet = {
-  OFFLINE: 'OFFLINE',
-  ERROR: 'ERROR',
-  STALLED: 'STALLED',
-  MINING: 'MINING'
-}
-let globalMiningState = stateSubnet.OFFLINE
-let globalBlockHeight = Infinity
-const stateService = {
-  OFFLINE: 'OFFLINE',
-  ERROR: 'ERROR',
-  DEPLOYED: 'DEPLOYED'
-}
 
 
 async function getState() {
@@ -90,7 +77,10 @@ async function getContainersState() {
     };
     isSubnet ? subnets.push(container) : services.push(container);
   }
-  return [subnets, services];
+  return {
+    subnets: subnets,
+    services: services
+  }
 }
 
 async function checkDeployState() {
@@ -117,7 +107,6 @@ async function checkMining() {
     }
   }
   return {
-    state: globalMiningState,
     blocks: blockHeights,
     peers: peerCounts,
   };
@@ -145,10 +134,6 @@ async function checkBlock(containerIP, containerPort) {
     }
     let block = response.data.result.Number;
     if (block == null) block = 0;
-    if (containerIP == "192.168.25.11"){
-      globalMiningState = (block > globalBlockHeight) ? stateSubnet.MINING : stateSubnet.STALLED
-      globalBlockHeight = block
-    }
     return block;
   } catch (error) {
     console.log(error.code);
@@ -196,7 +181,7 @@ function isSubnetContainer(container) {
   container.shift();
   const name = container.join();
   let isSubnet = false;
-  if (name.includes("subnet")) {
+  if (name.includes("subnet") || name.includes("bootnode")) {
     isSubnet = true;
   }
   return [isSubnet, name];

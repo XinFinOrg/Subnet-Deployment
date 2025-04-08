@@ -14,12 +14,14 @@
         <div>
           <div>1. Select Subnet Configuration</div> 
           <div>
-            <button id="gen_button_1_tn" class="button gen-button" onclick="generate1('testnet')">1-Node Subnet (Testnet)</button>
-            <button id="gen_button_3_tn" class="button gen-button" onclick="generate3('testnet')">3-Node Subnet with Subswap (Testnet)</button>
+            <button id="gen_button_1_tn" class="button gen-button" onclick="generate1('testnet', false)">1-Node Subnet (Testnet)</button>
+            <button id="gen_button_1_tn_ss" class="button gen-button" onclick="generate1('testnet', true)">1-Node Subnet with Subswap (Testnet)</button>
+            <button id="gen_button_3_tn_ss" class="button gen-button" onclick="generate3('testnet', true)">3-Node Subnet with Subswap (Testnet)</button>
           </div>
           <div>
-            <button id="gen_button_1_mn" class="button gen-button" onclick="generate1('mainnet')">1-Node Subnet (Mainnet)</button>
-            <button id="gen_button_3_mn" class="button gen-button" onclick="generate3('mainnet')">3-Node Subnet with Subswap (Mainnet)</button>
+            <button id="gen_button_1_mn" class="button gen-button" onclick="generate1('mainnet', false)">1-Node Subnet (Mainnet)</button>
+            <button id="gen_button_1_mn_ss" class="button gen-button" onclick="generate1('mainnet', true)">1-Node Subnet with Subswap (Mainnet)</button>
+            <button id="gen_button_3_mn_ss" class="button gen-button" onclick="generate3('mainnet', true)">3-Node Subnet with Subswap (Mainnet)</button>
           </div>
           <div>
             <button id="gen_button_custom" class="button gen-button" onclick="window.open('/gen', '_blank')">Custom Subnet</button>
@@ -28,11 +30,11 @@
         <div>
           <div id="copy-instruction"></div>
           <div>2. Start Subnet</div>
-          <button id="start_button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
-          <button id="stop_button" class="button" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
+          <button id="start-subnet-button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+          <button id="stop-subnet-button" class="button" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
         </div>
         <div >
-          <div id="mainnet-testnet-info">3a. Add Mainnet/Testnet balance to: </div>
+          <div id="mainnet-testnet-info">3. Add Mainnet/Testnet balance to: </div>
           <div id="parentnet-wallet"></div>
           <div id="parentnet-zero-wallet"></div>
           <div id="testnet-faucet-info">
@@ -46,12 +48,12 @@
           </div>
           <br>
         </div>
-        <div id="subnet-faucet-info">
-          <div>3b. Add Subnet balance to: </div>
+        <!-- <div id="subnet-faucet-info">
+          <div>3. Add Subnet balance to: </div>
           <div id="subnet-wallet"></div>
           <div id="subnet-zero-wallet"></div>
           &emsp;<a href="/faucet" target="_blank">Subnet Faucet</a>
-        </div>
+        </div> -->
         <br>
         <div>
           <div>4. Deploy Smart Contracts</div>
@@ -61,9 +63,11 @@
           <button id="button-subswap" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_subswap', 'output')">Deploy Subswap</button> 
         </div>
         <div>
-          <div>5. start services</div>
+          <div>5. Start Services</div>
 
-          <button class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
+          <button id="start-services-button" class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
+          <button id="stop-services-button" class="button" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
+          <div id="services-details"></div>
         </div>
         <div>
           <div>6. start optional</div>

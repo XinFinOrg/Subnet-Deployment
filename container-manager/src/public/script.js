@@ -23,9 +23,12 @@ async function callStateApi(route, outElementId) {
   }
 }
 
-async function generate1(network){
+async function generate1(network, subswap){
   console.log('generate1')
-  key = await genAddress()
+  const parentnetWallet = await genAddress()
+  const parentnetZeroWallet = await genAddress()
+  const subnetWallet = await genAddress()
+  const subnetZeroWallet = await genAddress()
   const formData = {
     'text-subnet-name': 'myxdcsubnet',
     'text-num-subnet': '1',
@@ -41,12 +44,20 @@ async function generate1(network){
     'customversion-csc': '',
     'customversion-zero': '',
     pnradio: `pn-radio-${network}`,
-    'parentnet-wallet-pk': key.privateKey,
+    'parentnet-wallet-pk': parentnetWallet.privateKey,
     rmradio: 'rm-radio-full',
     'parentnet-zero-wallet-pk': '',
     zmradio: 'zm-radio-one',
     'subnet-wallet-pk': '',
     'subnet-zero-wallet-pk': ''
+  }
+  if (subswap){
+    formData['xdczero-checkbox'] = 'on'
+    formData['parentnet-zero-wallet-pk'] = parentnetZeroWallet.privateKey
+    formData['zmradio'] = 'zm-radio-bi'
+    formData['subnet-wallet-pk'] = subnetWallet.privateKey
+    formData['subnet-zero-wallet-pk'] = subnetZeroWallet.privateKey
+    formData['subswap-checkbox'] = 'on'
   }
   const response = await fetch('/submit_preconfig',
      { method: "POST",
@@ -59,12 +70,12 @@ async function generate1(network){
   outdiv.textContent = await response.text()
 }
 
-async function generate3(network){
+async function generate3(network, subswap){
   console.log('generate3')
-  parentnetWallet = await genAddress()
-  parentnetZeroWallet = await genAddress()
-  subnetWallet = await genAddress()
-  subnetZeroWallet = await genAddress()
+  const parentnetWallet = await genAddress()
+  const parentnetZeroWallet = await genAddress()
+  const subnetWallet = await genAddress()
+  const subnetZeroWallet = await genAddress()
   const formData = {
     'text-subnet-name': 'myxdcsubnet',
     'text-num-subnet': '3',
@@ -79,15 +90,17 @@ async function generate3(network){
     'customversion-frontend': '',
     'customversion-csc': '',
     'customversion-zero': '',
-    pnradio: `pn-radio-${network}`,
+    'pnradio': `pn-radio-${network}`,
     'parentnet-wallet-pk': parentnetWallet.privateKey,
-    rmradio: 'rm-radio-full',
-    'xdczero-checkbox': 'on',
-    'parentnet-zero-wallet-pk': parentnetZeroWallet.privateKey,
-    zmradio: 'zm-radio-bi',
-    'subnet-wallet-pk': subnetWallet.privateKey,
-    'subnet-zero-wallet-pk': subnetZeroWallet.privateKey,
-    'subswap-checkbox': 'on'
+    'rmradio': 'rm-radio-full',
+  }
+  if (subswap){
+    formData['xdczero-checkbox'] = 'on'
+    formData['parentnet-zero-wallet-pk'] = parentnetZeroWallet.privateKey
+    formData['zmradio'] = 'zm-radio-bi'
+    formData['subnet-wallet-pk'] = subnetWallet.privateKey
+    formData['subnet-zero-wallet-pk'] = subnetZeroWallet.privateKey
+    formData['subswap-checkbox'] = 'on'
   }
   const response = await fetch('/submit_preconfig',
      { method: "POST",
@@ -187,7 +200,8 @@ function collapseHistoryDivs(){
 function adjustStateDivs(data){
   if (data.deployState != 'NONE'){
     disableButtons('gen-button')
-    checkStarted(data.mineInfo)
+    checkSubnetStarted(data.containers.subnets)
+    checkServicesStarted(data.containers.services)
     showAddresses(data.requirements.addresses)
     showCopyInstruction(data.requirements.subnetConfig)
     showFaucet(data.requirements)
@@ -211,11 +225,34 @@ function disableButtons(className){
   });
 }
 
-function checkStarted(state){
-  if (state == "OFFLINE" || state == "STALLED" || state == "ERROR"){
-    document.getElementById("start_button").disabled = false
+function checkSubnetStarted(subnetContainers){
+  console.log(subnetContainers)
+  if (subnetContainers.length == 0){
+    document.getElementById("start-subnet-button").disabled = false
+    document.getElementById("stop-subnet-button").disabled = true
   } else {
-    document.getElementById("start_button").disabled = true
+    document.getElementById("start-subnet-button").disabled = true
+    document.getElementById("stop-subnet-button").disabled = false
+  }
+}
+
+function checkServicesStarted(servicesContainers){
+  if (servicesContainers.length == 0){
+    document.getElementById("start-services-button").disabled = false
+    document.getElementById("stop-services-button").disabled = true
+  } else {
+    document.getElementById("start-services-button").disabled = true
+    document.getElementById("stop-services-button").disabled = false
+    const ui = new URL(window.location.href);
+    ui.port = "5214"
+    const relayer = new URL(window.location.href);
+    relayer.port = "5213"
+    document.getElementById("services-details").innerHTML = `
+<a href="${ui}" target="_blank">Subnet UI</a>
+<br>
+<a href="${relayer}" target="_blank">Relayer UI</a>
+<br><br>
+`
   }
 }
 
@@ -285,16 +322,16 @@ function showAddresses(addresses){
   } else {
     parentnetZeroWallet.innerHTML = ""
   }
-  if (addresses.subnetWallet !== ""){
-    subnetWallet.innerHTML = '&emsp;Relayer Subnet Wallet: '+addresses.subnetWallet
-  } else {
-    subnetWallet.innerHTML = ""
-  }
-  if (addresses.subnetZeroWallet !== ""){
-    subnetZeroWallet.innerHTML = '&emsp;Relayer Subnet Zero Wallet: '+addresses.subnetZeroWallet
-  } else {
-    subnetZeroWallet.innerHTML = ""
-  }
+  // if (addresses.subnetWallet !== ""){
+  //   subnetWallet.innerHTML = '&emsp;Relayer Subnet Wallet: '+addresses.subnetWallet
+  // } else {
+  //   subnetWallet.innerHTML = ""
+  // }
+  // if (addresses.subnetZeroWallet !== ""){
+  //   subnetZeroWallet.innerHTML = '&emsp;Relayer Subnet Zero Wallet: '+addresses.subnetZeroWallet
+  // } else {
+  //   subnetZeroWallet.innerHTML = ""
+  // }
 }
 
 function showCopyInstruction(config){
@@ -312,19 +349,19 @@ docker compose --profile machineX up -d;<br>
 function showFaucet(requirements){
   if (requirements.subnetConfig.parentnet == "testnet"){
     const infoDiv = document.getElementById("mainnet-testnet-info")
-    infoDiv.textContent = "3a. Add Testnet balance to: "
+    infoDiv.textContent = "3. Add Testnet balance to: "
     const testnetFaucetInfo = document.getElementById("testnet-faucet-info")
     testnetFaucetInfo.style.display = "block"
   }
   if (requirements.subnetConfig.parentnet == "mainnet"){
     const infoDiv = document.getElementById("mainnet-testnet-info")
-    infoDiv.textContent = "3a. Add Mainnet balance to: "
+    infoDiv.textContent = "3. Add Mainnet balance to: "
 
   }
-  if (requirements.addresses.subnetWallet != "" || requirements.addresses.subnetZeroWallet != ""){
-    const subnetFaucetInfo = document.getElementById("subnet-faucet-info")
-    subnetFaucetInfo.style.display = "block"
-  }
+  // if (requirements.addresses.subnetWallet != "" || requirements.addresses.subnetZeroWallet != ""){
+  //   const subnetFaucetInfo = document.getElementById("subnet-faucet-info")
+  //   subnetFaucetInfo.style.display = "block"
+  // }
  
 
 }
