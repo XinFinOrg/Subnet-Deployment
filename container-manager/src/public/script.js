@@ -25,6 +25,7 @@ async function callStateApi(route, outElementId) {
 
 async function generate1(network, subswap){
   console.log('generate1')
+  loadingStart()
   const parentnetWallet = await genAddress()
   const parentnetZeroWallet = await genAddress()
   const subnetWallet = await genAddress()
@@ -72,6 +73,7 @@ async function generate1(network, subswap){
 
 async function generate3(network, subswap){
   console.log('generate3')
+  loadingStart()
   const parentnetWallet = await genAddress()
   const parentnetZeroWallet = await genAddress()
   const subnetWallet = await genAddress()
@@ -121,6 +123,7 @@ async function genAddress() {
 async function callStreamApi(route) {
   // const outputElement = document.createElement('div');
   // outputElement.className = 'output';
+  loadingStart();
   collapseHistoryDivs();
   const [outputWrapper, outputElement] = createCollapsibleDiv(route);
   document.getElementById('history-text').textContent = "History:"
@@ -209,12 +212,17 @@ function adjustStateDivs(data){
     disableContractButtons(data.requirements.deployedContracts) 
   }
 
-  allowClick()
+  // allowClick()
+  loadingFinished()
 }
 
-function allowClick(){
-  const bodyWrap = document.getElementById('body-wrap');
-  bodyWrap.style.pointerEvents = 'auto';
+function loadingFinished(){
+  document.getElementById('body-wrap').style.pointerEvents = 'auto';
+}
+
+function loadingStart(){
+  document.getElementById('body-wrap').style.pointerEvents = 'none';
+  document.getElementById('state').textContent = 'Status: Loading...'
 }
 
 function disableButtons(className){
