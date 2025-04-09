@@ -10,10 +10,10 @@ body {
   padding: 20px; /* Add padding to prevent content from touching the edges */
 }
 
-.body-wrap{
-  display:flex;
+.body-wrap {
+  display: flex;
   background-color: rgba(0, 0, 0, 0);
-  z-index: 9999; 
+  z-index: 9999;
   pointer-events: none;
 }
 
@@ -26,7 +26,6 @@ body {
   text-align: center;
   min-width: 300px;
   min-height: 300px;
-  
 }
 .left-aligned {
   text-align: left;
@@ -61,7 +60,7 @@ h1 {
 .button.red:hover {
   background-color: #b30000;
 }
-.button.contract-deploy{
+.button.contract-deploy {
   display: none;
 }
 .toggle-button {
@@ -98,10 +97,10 @@ h1 {
   white-space: pre-wrap; /* Ensures JSON formatting is preserved */
 }
 
-#testnet-faucet-info{
+#testnet-faucet-info {
   display: none;
 }
 
-#subnet-faucet-info{
+#subnet-faucet-info {
   display: none;
 }

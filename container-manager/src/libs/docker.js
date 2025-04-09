@@ -1,11 +1,11 @@
 // const { execSync } = require('child_process');
 // const fs = require('fs')
-// const path = require('path'); 
+// const path = require('path');
 // const axios = require('axios');
 // const mountPath = path.join(__dirname, '../mount/generated/')
 // const instance = axios.create({
 //   socketPath: '/var/run/docker.sock',
-//   baseURL: "http://unix:/", 
+//   baseURL: "http://unix:/",
 // });
 
 // module.exports = {

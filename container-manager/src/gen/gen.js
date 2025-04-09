@@ -6,10 +6,10 @@ const gen_compose = require("./gen_compose");
 const gen_env = require("./gen_env");
 const gen_other = require("./gen_other");
 
-const config = configModule.config
+const config = configModule.config;
 Object.freeze(config);
-console.log('config', config)
-configModule.configSanityCheck(config)
+console.log("config", config);
+configModule.configSanityCheck(config);
 
 // const num_machines = config.num_machines
 // const num_subnet = config.num_subnet
@@ -71,16 +71,14 @@ Object.entries(explorer_compose).forEach((entry) => {
   doc["services"][key] = value;
 });
 
-
 // checkpoint smartcontract deployment config
-doc, ip_record = gen_compose.injectNetworkConfig(doc);
+doc, (ip_record = gen_compose.injectNetworkConfig(doc));
 const commonconf = gen_env.genServicesConfig(ip_record);
 subnetconf = [];
 for (let i = 1; i <= config.num_subnet; i++) {
   subnetconf.push(gen_env.genSubnetConfig(i, keys, ip_record));
 }
 const deployconf = gen_env.genContractDeployEnv(ip_record);
-
 
 const compose_content = yaml.dump(doc, {});
 
@@ -159,7 +157,6 @@ function writeGenerated(output_dir) {
     );
   }
 
-
   fs.writeFileSync(
     `${output_dir}/genesis_input.yml`,
     genesis_input_file,
@@ -170,7 +167,6 @@ function writeGenerated(output_dir) {
       }
     }
   );
-
 }
 
 function copyScripts(output_dir) {

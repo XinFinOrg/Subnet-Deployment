@@ -1,5 +1,5 @@
 const configModule = require("./config_gen");
-const config = configModule.config
+const config = configModule.config;
 Object.freeze(config);
 
 module.exports = {
@@ -15,8 +15,9 @@ function genSubnetConfig(subnet_id, key, ip_record) {
   const port = 20303 + subnet_id - 1;
   const rpcport = 8545 + subnet_id - 1;
   const wsport = 9555 + subnet_id - 1;
-  const bootnode_ip = config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
-  const stats_ip = config.num_machines === 1 ? ip_record["stats"] : config.ip_1
+  const bootnode_ip =
+    config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
+  const stats_ip = config.num_machines === 1 ? ip_record["stats"] : config.ip_1;
   const config_env = `
 INSTANCE_NAME=subnet${subnet_id}
 PRIVATE_KEY=${private_key}
@@ -37,11 +38,12 @@ LOG_LEVEL=2
   return config_env;
 }
 
-
 function genServicesConfig() {
   const url = config.parentnet.url;
-  const bootnode_ip = config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
-  const subnet_ip = config.num_machines === 1 ? ip_record["subnet1"] : config.ip_1;
+  const bootnode_ip =
+    config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
+  const subnet_ip =
+    config.num_machines === 1 ? ip_record["subnet1"] : config.ip_1;
   let config_env = `
 # Bootnode
 EXTIP=${bootnode_ip}
@@ -67,29 +69,28 @@ PARENTNET_WALLET_PK=${config.parentnet.privatekey}
 
 `;
 
-if (config.zero.zero_mode == 'one-directional'){
-  config_env += `
+  if (config.zero.zero_mode == "one-directional") {
+    config_env += `
 # XDC-ZERO
 PARENTNET_ZERO_WALLET_PK=${config.zero.parentnet_zero_wallet_pk}
-  `
-
-} else if (config.zero.zero_mode == 'bi-directional'){
-  config_env += `
+  `;
+  } else if (config.zero.zero_mode == "bi-directional") {
+    config_env += `
 # XDC-ZERO
 PARENTNET_ZERO_WALLET_PK=${config.zero.parentnet_zero_wallet_pk}
 SUBNET_WALLET_PK=${config.zero.subnet_wallet_pk}
 SUBNET_ZERO_WALLET_PK=${config.zero.subnet_zero_wallet_pk}
-  `
-}
+  `;
+  }
   // # Parent Chain Observe Node
   // PARENTNET_NODE_NAME=mainnet_observer
   // PRIVATE_KEYS=11111111111111111111111111111111111111111111111111111111111111
   return config_env;
 }
 
-
 function genContractDeployEnv(ip_record) {
-  const subnet_ip = config.num_machines === 1 ? ip_record["subnet1"] : config.ip_1
+  const subnet_ip =
+    config.num_machines === 1 ? ip_record["subnet1"] : config.ip_1;
   const config_deploy = `
 PARENTNET_URL=${config.parentnet.url}
 SUBNET_URL=http://${subnet_ip}:8545

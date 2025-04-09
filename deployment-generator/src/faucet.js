@@ -22,10 +22,10 @@ const inputs = process.argv;
 
 if (inputs.length == 5) {
   try {
-    processTransfer(inputs).then(output => {
+    processTransfer(inputs).then((output) => {
       // console.log(output)
-      process.exit()
-    })
+      process.exit();
+    });
   } catch (error) {
     console.log(error);
     console.log(usage);
@@ -50,10 +50,10 @@ async function processTransfer(inputs) {
     value: ethers.parseEther(amount),
   };
 
-  try{
+  try {
     await provider._detectNetwork();
-  } catch (error){
-    throw Error("Cannot connect to RPC")
+  } catch (error) {
+    throw Error("Cannot connect to RPC");
   }
 
   let sendPromise = fromWallet.sendTransaction(tx);
@@ -84,8 +84,8 @@ async function processTransfer(inputs) {
       return {
         fromBalance: fromBalance,
         toBalance: toBalance,
-        txHash: txHash
-      }
+        txHash: txHash,
+      };
     }
   }
 }
@@ -100,13 +100,15 @@ async function faucetServer(inputs) {
     fromPK = inputs[3];
     fromWallet = new ethers.Wallet(fromPK);
 
-    if (command != "server") {throw Error("Invalid command")};
+    if (command != "server") {
+      throw Error("Invalid command");
+    }
   } catch (error) {
     console.log(error);
     console.log(
       "Usage: SUBNET_URL=<subnet_url> node faucet.js server <from wallet pk>"
     );
-    process.exit()
+    process.exit();
   }
   app.set("view engine", "pug");
   app.set("views", path.join(__dirname, "views_faucet"));
@@ -135,31 +137,34 @@ async function faucetServer(inputs) {
     });
   });
 
-  router.get("/faucet", async function(req, res) {
+  router.get("/faucet", async function (req, res) {
     console.log(req.query);
     try {
-      toAddress = req.query.dest
-      amount = req.query.amount
-      if (!ethers.isAddress(toAddress)) throw Error("Invalid destination address")
-      if (isNaN(Number(amount)) || parseFloat(amount) <= 0 || amount == "") throw Error("Invalid Amount")
-      if (parseFloat(amount) > 1000000) throw Error("Faucet request over 1,000,000 is not allowed")
+      toAddress = req.query.dest;
+      amount = req.query.amount;
+      if (!ethers.isAddress(toAddress))
+        throw Error("Invalid destination address");
+      if (isNaN(Number(amount)) || parseFloat(amount) <= 0 || amount == "")
+        throw Error("Invalid Amount");
+      if (parseFloat(amount) > 1000000)
+        throw Error("Faucet request over 1,000,000 is not allowed");
       let inputs = ["", "", fromPK, toAddress, amount];
-      const {fromBalance, toBalance, txHash} = await processTransfer(inputs);
+      const { fromBalance, toBalance, txHash } = await processTransfer(inputs);
       res.json({
         success: true,
         sourceAddress: fromWallet.address,
         destAddress: toAddress,
         sourceBalance: fromBalance,
         destBalance: toBalance,
-        txHash: txHash
-      })
+        txHash: txHash,
+      });
     } catch (error) {
       console.log(error);
-      console.log(error.message)
+      console.log(error.message);
       res.json({
         success: false,
-        message: error.message 
-      })
+        message: error.message,
+      });
     }
   });
 

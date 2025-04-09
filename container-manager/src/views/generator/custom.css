@@ -4,15 +4,15 @@
   max-width: 1100px;
 }
 
-#helper{
+#helper {
   margin-left: 15%;
   margin-top: 50px;
   max-width: 1100px;
 }
-#helper-title{
-  margin-right:10%; 
+#helper-title {
+  margin-right: 10%;
 }
-.helper-block{
+.helper-block {
   padding: 10px;
 }
 
@@ -28,17 +28,16 @@
   display: block;
 }
 
-#toggle2:checked ~ .grayedout{
-  background-color: gray
-  disabled
+#toggle2:checked ~ .grayedout {
+  background-color: gray disabled;
 }
 
-#lite-mode-extra-info{
-  color:red
+#lite-mode-extra-info {
+  color: red;
 }
 
-#incomplete-required-warning{
-  color:red
+#incomplete-required-warning {
+  color: red;
 }
 
 /* hover trick */
@@ -59,7 +58,7 @@
   margin-left: 5px;
   cursor: pointer;
 }
-.info-icon-all-gray{
+.info-icon-all-gray {
   color: #f0f0f0;
   background-color: #f0f0f0;
 }
@@ -99,46 +98,43 @@
   opacity: 1;
 }
 
-
-#information1{
-  display:none;
+#information1 {
+  display: none;
 }
-#expand1:hover + #information1{
-  display:block;
+#expand1:hover + #information1 {
+  display: block;
 }
 
 /* expanding after selection */
-#ipoption{
-  display:none;
+#ipoption {
+  display: none;
 }
-#checkbox-num-machine{
-  display:none;
+#checkbox-num-machine {
+  display: none;
 }
-#checkbox-num-machine:checked+#ipoption{
-  display:block;
-}
-
-
-
-#customkeys{
-  display:none;
-}
-#customkeys-checkbox:checked+#customkeys{
-  display:block;
+#checkbox-num-machine:checked + #ipoption {
+  display: block;
 }
 
-#customversion{
-  display:none;
+#customkeys {
+  display: none;
 }
-#customversion-checkbox:checked+#customversion{
-  display:block;
+#customkeys-checkbox:checked + #customkeys {
+  display: block;
 }
 
-#xdczero{
-  display:none;
+#customversion {
+  display: none;
 }
-#xdczero-checkbox:checked+#xdczero{
-  display:block;
+#customversion-checkbox:checked + #customversion {
+  display: block;
+}
+
+#xdczero {
+  display: none;
+}
+#xdczero-checkbox:checked + #xdczero {
+  display: block;
 }
 
 /* #rm-radio-full:checked ~ #xdczero-upper{
@@ -148,12 +144,12 @@
   display:block;
 } */
 
-#zerobidi{
-  display:none;
+#zerobidi {
+  display: none;
 }
-#zm-radio-bi:checked ~ #zerobidi{
-  display:block;
+#zm-radio-bi:checked ~ #zerobidi {
+  display: block;
 }
-#zm-radio-one:checked ~ #zerobidi{
-  display:none;
+#zm-radio-one:checked ~ #zerobidi {
+  display: none;
 }

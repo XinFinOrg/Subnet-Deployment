@@ -30,7 +30,8 @@ const config = {
     csc: process.env.VERSION_CSC || "feature-v0.3.0",
     // zero: process.env.VERSION_ZERO || "v0.3.0",
     zero: process.env.VERSION_ZERO || "feature-v0.3.0",
-    subswap_frontend: process.env.VERSION_SUBSWAP_FRONTEND || "feature-dockerize", 
+    subswap_frontend:
+      process.env.VERSION_SUBSWAP_FRONTEND || "feature-dockerize",
     explorer: process.env.VERSION_EXPLORER || "v0.1.0",
   },
   parentnet: {
@@ -50,8 +51,7 @@ const config = {
     subnet_wallet_pk: process.env.SUBNET_WALLET_PK || "",
     subnet_zero_wallet_pk: process.env.SUBNET_ZERO_WALLET_PK || "",
     parentnet_zero_wallet_pk: process.env.PARENTNET_ZERO_WALLET_PK || "",
-    subswap: process.env.SUBSWAP || "" 
-
+    subswap: process.env.SUBSWAP || "",
   },
   generator: {
     output_path: `${__dirname}/../../mount/generated/`,
@@ -59,15 +59,15 @@ const config = {
 };
 
 // if (configSanityCheck(config) === true) {
-  // module.exports = config;
+// module.exports = config;
 // } else {
-  // console.log("bad config init file, please check again");
-  // process.exit();
+// console.log("bad config init file, please check again");
+// process.exit();
 // }
-module.exports = { 
+module.exports = {
   config,
-  configSanityCheck
-}
+  configSanityCheck,
+};
 
 function validatePK(private_key) {
   let wallet = new ethers.Wallet(private_key);
@@ -110,12 +110,7 @@ function configSanityCheck(config) {
     process.exit(1);
   }
 
-  if (
-    !(
-      config.relayer_mode === "full" ||
-      config.relayer_mode === "lite" 
-    )
-  ) {
+  if (!(config.relayer_mode === "full" || config.relayer_mode === "lite")) {
     console.log("RELAYER_MODE only accepts 'full' or 'lite' (default full)");
     process.exit(1);
   }
@@ -123,12 +118,12 @@ function configSanityCheck(config) {
   if (
     config.parentnet.network === "devnet" ||
     config.parentnet.network === "testnet" ||
-    config.parentnet.network === "mainnet" 
+    config.parentnet.network === "mainnet"
   ) {
     let official_urls = {
       devnet: "https://devnetstats.apothem.network/devnet",
       testnet: "https://erpc.apothem.network/",
-      mainnet: "https://rpc.xdc.org"
+      mainnet: "https://rpc.xdc.org",
     };
     config.parentnet.url = official_urls[config.parentnet.network];
   } else {
@@ -204,8 +199,7 @@ function configSanityCheck(config) {
     config.keys.subnets_addr = output_wallet;
   }
 
-
-  if (config.zero.zero_mode == "one-directional"){
+  if (config.zero.zero_mode == "one-directional") {
     try {
       validatePK(config.zero.parentnet_zero_wallet_pk);
     } catch {
@@ -214,17 +208,18 @@ function configSanityCheck(config) {
     }
   }
 
-  if (config.zero.zero_mode === "bi-directional"){
+  if (config.zero.zero_mode === "bi-directional") {
     try {
       validatePK(config.zero.subnet_wallet_pk);
       validatePK(config.zero.subnet_zero_wallet_pk);
       validatePK(config.zero.parentnet_zero_wallet_pk);
     } catch {
-      console.log("Invalid SUBNET_WALLET_PK or SUBNET_ZERO_WALLET_PK or PARENTNET_ZERO_WALLET_PK");
+      console.log(
+        "Invalid SUBNET_WALLET_PK or SUBNET_ZERO_WALLET_PK or PARENTNET_ZERO_WALLET_PK"
+      );
       process.exit(1);
     }
   }
-
 
   return true;
 }

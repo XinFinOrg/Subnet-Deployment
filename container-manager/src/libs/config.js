@@ -3,8 +3,8 @@ const fs = require("fs");
 const yaml = require("js-yaml");
 const path = require("path");
 const mountPath = path.join(__dirname, "../../mount/generated/");
-const configModule = require("../gen/config_gen.js")
-const version = configModule.config.version
+const configModule = require("../gen/config_gen.js");
+const version = configModule.config.version;
 const config = {};
 
 module.exports = config;
@@ -22,12 +22,12 @@ function initModule() {
   if (config["hostPath"] === "") {
     throw Error("Incomplete container start, did not find env: HOSTPWD");
   }
-  console.log('init with versions', version)
-  config["version"] = version
+  console.log("init with versions", version);
+  config["version"] = version;
 }
 
 function checkMountPath() {
-  const shouldExistMount = path.join(mountPath, 'scripts')
+  const shouldExistMount = path.join(mountPath, "scripts");
   if (!fs.existsSync(shouldExistMount)) {
     //first check folder exists
     return [false, shouldExistMount];

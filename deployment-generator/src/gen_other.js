@@ -1,5 +1,5 @@
 const configModule = require("./config_gen");
-const config = configModule.config
+const config = configModule.config;
 Object.freeze(config);
 
 module.exports = {
@@ -71,7 +71,7 @@ function genDeploymentJson(keys) {
 // }
 
 function genCommands() {
-  const csc_mode = (config.relayer_mode === 'lite') ? "lite":"full"
+  const csc_mode = config.relayer_mode === "lite" ? "lite" : "full";
   let commands = "";
   commands += "Start under generated/ directory\n";
   commands += "\n1. Deploy Subnet nodes\n";
@@ -92,7 +92,9 @@ function genCommands() {
   commands += "  ./scripts/check-mining.sh\n";
   commands += "\n3. Deploy Checkpoint Smart Contract (CSC)\n";
   commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
-  commands += '  docker run -v ${PWD}/:/app/cicd/mount/' + ` --network generated_docker_net xinfinorg/csc:${config.version.csc} ${csc_mode}\n`
+  commands +=
+    "  docker run -v ${PWD}/:/app/cicd/mount/" +
+    ` --network generated_docker_net xinfinorg/csc:${config.version.csc} ${csc_mode}\n`;
   commands += "\n4. Start services (relayer, backend, frontend)\n";
   commands += `  docker compose --profile services pull\n`;
   commands += `  docker compose --profile services up -d\n`;
@@ -100,48 +102,58 @@ function genCommands() {
   commands += `  Frontend: http://${config.public_ip}:5214\n`;
   commands += `  Relayer: http://${config.public_ip}:5215\n`;
 
-  if (config.zero.zero_mode == ""){
+  if (config.zero.zero_mode == "") {
   } else if (config.zero.zero_mode == "one-directional") {
-    if (config.zero.subswap == "true"){
-      commands += '\n6. Deploy XDC-Zero and Subswap\n'
+    if (config.zero.subswap == "true") {
+      commands += "\n6. Deploy XDC-Zero and Subswap\n";
       commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-      commands += '  docker run -v ${PWD}/:/app/cicd/mount/' + ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} zeroandsubswap\n`
+      commands +=
+        "  docker run -v ${PWD}/:/app/cicd/mount/" +
+        ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} zeroandsubswap\n`;
       commands += "\n7. Run Subswap Frontend\n";
       commands += `  docker compose --profile subswap pull\n`;
       commands += `  docker compose --profile subswap up -d\n`;
-      commands += "\n8. Confirm Subswap UI\n"
+      commands += "\n8. Confirm Subswap UI\n";
       commands += `  Subswap-Frontend: http://${config.public_ip}:5216\n`;
     } else {
-      commands += '\n6. Deploy XDC-Zero\n'
+      commands += "\n6. Deploy XDC-Zero\n";
       commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-      commands += '  docker run -v ${PWD}/:/app/cicd/mount/' + ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`
+      commands +=
+        "  docker run -v ${PWD}/:/app/cicd/mount/" +
+        ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
     }
     commands += "\nRestart Relayer\n";
     commands += `  docker compose --profile services down\n`;
     commands += `  docker compose --profile services up -d\n`;
   } else if (config.zero.zero_mode == "bi-directional") {
-      commands += '\n6. Deploy Reverse CSC\n'
-      commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
-      commands += '  docker run -v ${PWD}/:/app/cicd/mount/' + ` --network generated_docker_net xinfinorg/csc:${config.version.csc} reversefull\n`
-    if (config.zero.subswap == "true"){
-      commands += '\n7. Deploy XDC-Zero and Subswap\n'
+    commands += "\n6. Deploy Reverse CSC\n";
+    commands += `  docker pull xinfinorg/csc:${config.version.csc}\n`;
+    commands +=
+      "  docker run -v ${PWD}/:/app/cicd/mount/" +
+      ` --network generated_docker_net xinfinorg/csc:${config.version.csc} reversefull\n`;
+    if (config.zero.subswap == "true") {
+      commands += "\n7. Deploy XDC-Zero and Subswap\n";
       commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-      commands += '  docker run -v ${PWD}/:/app/cicd/mount/' + ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} zeroandsubswap\n`
+      commands +=
+        "  docker run -v ${PWD}/:/app/cicd/mount/" +
+        ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} zeroandsubswap\n`;
       commands += "\n8. Run Subswap Frontend\n";
       commands += `  docker compose --profile subswap_frontend pull\n`;
       commands += `  docker compose --profile subswap_frontend up -d\n`;
-      commands += "\n9. Confirm Subswap UI\n"
+      commands += "\n9. Confirm Subswap UI\n";
       commands += `  Subswap-Frontend: http://${config.public_ip}:5216\n`;
     } else {
-      commands += '\n7. Deploy XDC-Zero\n'
+      commands += "\n7. Deploy XDC-Zero\n";
       commands += `  docker pull xinfinorg/xdc-zero:${config.version.zero}\n`;
-      commands += '  docker run -v ${PWD}/:/app/cicd/mount/' + ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`
+      commands +=
+        "  docker run -v ${PWD}/:/app/cicd/mount/" +
+        ` --network generated_docker_net xinfinorg/xdc-zero:${config.version.zero} endpointandregisterchain\n`;
     }
     commands += "\nRestart Relayer\n";
     commands += `  docker compose --profile services down\n`;
     commands += `  docker compose --profile services up -d\n`;
   } else {
-    console.log("Error: Invalid XDC-Zero mode")
+    console.log("Error: Invalid XDC-Zero mode");
     exit();
   }
 
@@ -228,8 +240,6 @@ function genCommands() {
   //   exit();
   // }
 
-
-  
   return commands;
 }
 
