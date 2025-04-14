@@ -67,17 +67,49 @@ async function getContainersState() {
   const containers = await getSubnetContainers();
   const subnets = [];
   const services = [];
+  const subswap = [];
+  const explorer = [];
+  const others = [];
   for (let i = 0; i < containers.length; i++) {
-    const [isSubnet, name] = isSubnetContainer(containers[i].name);
-    const container = {
-      name: name,
-      state: containers[i].state,
-    };
-    isSubnet ? subnets.push(container) : services.push(container);
+    const [isSubnet, nameSubnet] = isSubnetContainer(containers[i].name);
+    const [isService, nameService] = isServiceContainer(containers[i].name);
+    const isSubswap = isSubswapContainer(containers[i].name);
+    const isExplorer = isExplorerContainer(containers[i].name);
+    if (isSubnet) {
+      subnets.push({
+        name: nameSubnet,
+        state: containers[i].state,
+      });
+    } else if (isService) {
+      services.push({
+        name: nameService,
+        state: containers[i].state,
+      });
+    } else if (isSubswap) {
+      subswap.push({
+        name: nameService,
+        state: containers[i].state
+      })
+    } else if (isExplorer){
+      explorer.push({
+        name: nameService,
+        state: containers[i].state
+      })
+
+    } else {
+      others.push({
+        name: nameService,
+        state: containers[i].state,
+      });
+    }
   }
+
   return {
     subnets: subnets,
     services: services,
+    subswap: subswap,
+    explorer: explorer,
+    others: others,
   };
 }
 
@@ -181,6 +213,48 @@ function isSubnetContainer(container) {
     isSubnet = true;
   }
   return [isSubnet, name];
+}
+
+function isServiceContainer(container) {
+  container = container.split("-"); //container name format: generated-xxxxx-1, need to extract middle string
+  container.pop();
+  container.shift();
+  const name = container.join();
+  let isService = false;
+  if (name.includes("subswap_frontend")) return [false, name];
+  if (
+    name.includes("stats") ||
+    name.includes("frontend") ||
+    name.includes("relayer") ||
+    name.includes("bootnode")
+  ) {
+    isService = true;
+  }
+  return [isService, name];
+}
+
+function isSubswapContainer(container){
+  container = container.split("-"); //container name format: generated-xxxxx-1, need to extract middle string
+  container.pop();
+  container.shift();
+  const name = container.join();
+  if (name.includes("subswap_frontend")) {
+    return true
+  } else {
+    return false
+  }
+}
+
+function isExplorerContainer(container){
+  container = container.split("-"); //container name format: generated-xxxxx-1, need to extract middle string
+  container.pop();
+  container.shift();
+  const name = container.join();
+  if (name.includes("explorer")) {
+    return true
+  } else {
+    return false
+  }
 }
 
 function extractRPCPort(name) {

@@ -205,6 +205,8 @@ function adjustStateDivs(data) {
     disableButtons("gen-button");
     checkSubnetStarted(data.containers.subnets);
     checkServicesStarted(data.containers.services);
+    checkSubswapFrontendStarted(data.containers.subswap);
+    checkExplorerStarted(data.containers.explorer);
     showAddresses(data.requirements.addresses);
     showCopyInstruction(data.requirements.subnetConfig);
     showFaucet(data.requirements);
@@ -233,9 +235,8 @@ function disableButtons(className) {
   });
 }
 
-function checkSubnetStarted(subnetContainers) {
-  console.log(subnetContainers);
-  if (subnetContainers.length == 0) {
+function checkSubnetStarted(subnetsContainers) {
+  if (subnetsContainers.length == 0) {
     document.getElementById("start-subnet-button").disabled = false;
     document.getElementById("stop-subnet-button").disabled = true;
   } else {
@@ -254,12 +255,44 @@ function checkServicesStarted(servicesContainers) {
     const ui = new URL(window.location.href);
     ui.port = "5214";
     const relayer = new URL(window.location.href);
-    relayer.port = "5213";
+    relayer.port = "5215";
     document.getElementById("services-details").innerHTML = `
-<a href="${ui}" target="_blank">Subnet UI</a>
+<a href="${ui}" target="_blank">Subnet UI (please wait 2 minutes for loading after startup)</a>
 <br>
 <a href="${relayer}" target="_blank">Relayer UI</a>
 <br><br>
+`;
+  }
+}
+
+function checkSubswapFrontendStarted(containers){
+  if (containers.length == 0) {
+    document.getElementById("start-subswap-button").disabled = false;
+    document.getElementById("stop-subswap-button").disabled = true;
+  } else {
+    document.getElementById("start-subswap-button").disabled = true;
+    document.getElementById("stop-subswap-button").disabled = false;
+    const subswap = new URL(window.location.href);
+    subswap.port = "5216";
+    document.getElementById("subswap-details").innerHTML = `
+<a href="${subswap}" target="_blank">Subswap UI (please wait 2 minutes for loading after startup</a>
+<br>
+`;
+  }
+}
+
+function checkExplorerStarted(containers){
+  if (containers.length == 0) {
+    document.getElementById("start-explorer-button").disabled = false;
+    document.getElementById("stop-explorer-button").disabled = true;
+  } else {
+    document.getElementById("start-explorer-button").disabled = true;
+    document.getElementById("stop-explorer-button").disabled = false;
+    const explorer = new URL(window.location.href);
+    explorer.port = "5217";
+    document.getElementById("explorer-details").innerHTML = `
+<a href="${explorer}" target="_blank">Explorer UI</a>
+<br>
 `;
   }
 }

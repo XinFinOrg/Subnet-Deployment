@@ -40,16 +40,6 @@ app.get("/state", async (req, res) => {
   res.send(JSON.stringify(response, null, 2));
 });
 
-app.get("/start_subnet", async (req, res) => {
-  console.log("/start_subnet called");
-  await exec.startComposeProfile("machine1", setupRes(req, res));
-});
-
-app.get("/start_subnet_slow", async (req, res) => {
-  console.log("/start_subnet_slow called");
-  await exec.startSubnet("machine1", setupRes(req, res));
-});
-
 app.get("/deploy_csc_lite", async (req, res) => {
   console.log("/deploy_csc_lite called");
   await exec.deployCSC("lite", setupRes(req, res));
@@ -73,15 +63,9 @@ app.get("/deploy_subswap", async (req, res) => {
   await exec.deploySubswap(setupRes(req, res));
 });
 
-app.get("/start_services", async (req, res) => {
-  console.log("/start_services called");
-  await exec.startComposeProfile("services", setupRes(req, res));
-});
-
-app.get("/stop_services", async (req, res) => {
-  console.log("/stop_services called");
-  const callbacks = setupRes(req, res);
-  await exec.stopComposeProfile("services", callbacks);
+app.get("/start_subnet", async (req, res) => {
+  console.log("/start_subnet called");
+  await exec.startComposeProfile("machine1", setupRes(req, res));
 });
 
 app.get("/stop_subnet", async (req, res) => {
@@ -90,10 +74,44 @@ app.get("/stop_subnet", async (req, res) => {
   await exec.stopComposeProfile("machine1", callbacks);
 });
 
+app.get("/start_subnet_slow", async (req, res) => {
+  console.log("/start_subnet_slow called");
+  await exec.startSubnet("machine1", setupRes(req, res));
+});
+
+app.get("/start_services", async (req, res) => {
+  console.log("/start_services called");
+  await exec.startComposeProfile("services", setupRes(req, res));
+});
+
+app.get("/stop_services", async (req, res) => {
+  console.log("/stop_services called");
+  await exec.stopComposeProfile("services", setupRes(req, res));
+});
+
+app.get("/start_subswap_frontend", async (req, res) => {
+  console.log("/start_subswap_frontend called");
+  await exec.startComposeProfile("subswap", setupRes(req, res));
+});
+
+app.get("/stop_subswap_frontend", async (req, res) => {
+  console.log("/stop_subswap_frontend called");
+  await exec.stopComposeProfile("subswap", setupRes(req, res));
+});
+
+app.get("/start_explorer", async (req, res) => {
+  console.log("/start_explorer called");
+  await exec.startComposeProfile("explorer", setupRes(req, res));
+});
+
+app.get("/stop_explorer", async (req, res) => {
+  console.log("/stop_explorer called");
+  await exec.stopComposeProfile("explorer", setupRes(req, res));
+});
+
 app.get("/remove_subnet", async (req, res) => {
   console.log("/remove_subnet called");
-  const callbacks = setupRes(req, res);
-  await exec.stopComposeProfile("machine1", callbacks);
+  await exec.stopComposeProfile("machine1", setupRes(req, res));
 });
 
 // generator methods (also pug instead of html)
