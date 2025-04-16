@@ -1,3 +1,6 @@
+let prevBlockNum = 0
+let prevPrevBlockNum = 0
+
 async function callStateApi(route, outElementId) {
   const outputDiv = document.getElementById(outElementId);
   try {
@@ -204,9 +207,10 @@ function adjustStateDivs(data) {
   if (data.deployState != "NONE") {
     disableButtons("gen-button");
     checkSubnetStarted(data.containers.subnets);
+    checkMiningState(data.mineInfo);
     checkServicesStarted(data.containers.services);
     checkSubswapFrontendStarted(data.containers.subswap);
-    checkExplorerStarted(data.containers.explorer);
+    // checkExplorerStarted(data.containers.explorer);
     showAddresses(data.requirements.addresses);
     showCopyInstruction(data.requirements.subnetConfig);
     showFaucet(data.requirements);
@@ -242,6 +246,18 @@ function checkSubnetStarted(subnetsContainers) {
   } else {
     document.getElementById("start-subnet-button").disabled = true;
     document.getElementById("stop-subnet-button").disabled = false;
+  }
+}
+
+function checkMiningState(mineInfo){
+  if(!mineInfo) {
+    document.getElementById("mining-status").innerHTML = `Confirm mining status: Not Mining`
+    return
+  }
+  if (mineInfo.blocks[0] > prevPrevBlockNum){
+    prevBlockNum = mineInfo.blocks[0]
+    prevPrevBlockNum = prevBlockNum
+    document.getElementById("mining-status").innerHTML = `Confirm mining status: Mining`
   }
 }
 

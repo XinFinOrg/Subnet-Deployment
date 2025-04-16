@@ -32,11 +32,15 @@
           <div>2. Start Subnet</div>
           <button id="start-subnet-button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
           <button id="stop-subnet-button" class="button" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
+          &nbsp;&nbsp;<div id="mining-status">Confirm mining status: Not Mining</div>
+          <br>
         </div>
         <div >
           <div id="mainnet-testnet-info">3. Add Mainnet/Testnet balance </div>
-          <div id="parentnet-wallet"></div>
-          <div id="parentnet-zero-wallet"></div>
+          <div class="display-address">
+            <div id="parentnet-wallet"></div>
+            <div id="parentnet-zero-wallet"></div>
+          </div>
           <div id="testnet-faucet-info">
             <div>&emsp;Testnet Faucets: </div>
             <div>
@@ -74,15 +78,10 @@
             <button id="start-subswap-button" class="button" onclick="callStreamApi('/start_subswap_frontend', 'output')">Start Subswap Frontend</button>
             <button id="stop-subswap-button" class="button" onclick="callStreamApi('/stop_subswap_frontend', 'output')">Stop Subswap Frontend</button>
           </div>
-          <div>
-            <button id="start-explorer-button" class="button" onclick="callStreamApi('/start_explorer', 'output')">Start XDC Explorer</button>
-            <button id="stop-explorer-button" class="button" onclick="callStreamApi('/stop_explorer', 'output')">Stop XDC Explorer</button>
-          </div>
-          <div id="subswap-details"></div> 
-          <div id="explorer-details"></div> 
-          <!-- <div>Subswap Frontend</div> -->
-          <!-- <div>explorer</div> -->
-          <!-- <div>monitor</div> -->
+          <!-- <div> -->
+            <!-- <button id="start-explorer-button" class="button" onclick="callStreamApi('/start_explorer', 'output')">Start XDC Explorer</button> -->
+            <!-- <button id="stop-explorer-button" class="button" onclick="callStreamApi('/stop_explorer', 'output')">Stop XDC Explorer</button> -->
+          <!-- </div> -->
         </div>
       </div>
       <div id="history-text"></div>

@@ -27,6 +27,8 @@ body {
   min-width: 300px;
   min-height: 300px;
 }
+
+
 .left-aligned {
   text-align: left;
 }
@@ -96,6 +98,29 @@ h1 {
   text-align: left;
   white-space: pre-wrap; /* Ensures JSON formatting is preserved */
 }
+#mining-status {
+  /* display: block; */
+  margin: 10px;
+  padding: 10px 20px;;
+  background-color: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-family: monospace;
+  text-align: left;
+  width: 300px
+}
+.display-address {
+  margin: 10px;
+  padding: 10px 20px;;
+  background-color: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-family: monospace;
+  text-align: left;
+  width: 600px
+}
+
+
 
 #testnet-faucet-info {
   display: none;
