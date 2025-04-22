@@ -16,7 +16,7 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
   let subnet_nodes = {};
   for (let i = start_num; i < start_num + num; i++) {
     const node_name = "subnet" + i.toString();
-    const volume = "${PWD}/xdcchain" + i.toString() + ":/work/xdcchain";
+    const volume = "${HOSTPWD}/xdcchain" + i.toString() + ":/work/xdcchain";
     const config_path = "subnet" + i.toString() + ".env";
     const compose_profile = "machine" + machine_id.toString();
     const port = 20302 + i;
@@ -24,7 +24,7 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
     const wsport = 9554 + i;
     subnet_nodes[node_name] = {
       image: `xinfinorg/xdcsubnets:${config.version.subnet}`,
-      volumes: [volume, "${PWD}/genesis.json:/work/genesis.json"],
+      volumes: [volume, "${HOSTPWD}/genesis.json:/work/genesis.json"],
       restart: "always",
       network_mode: "host",
       env_file: [config_path],
@@ -49,7 +49,7 @@ function genBootNode(machine_id) {
     image: `xinfinorg/xdcsubnets:${config.version.bootnode}`,
     restart: "always",
     env_file: config_path,
-    volumes: ["${PWD}/bootnodes:/work/bootnodes"],
+    volumes: ["${HOSTPWD}/bootnodes:/work/bootnodes"],
     entrypoint: ["bash", "/work/start-bootnode.sh"],
     command: ["-verbosity", "6", "-nodekey", "bootnode.key"],
     ports: ["20301:20301/tcp", "20301:20301/udp"],
@@ -61,7 +61,7 @@ function genBootNode(machine_id) {
 function genServices(machine_id) {
   const config_path = "common.env";
   const machine = "services";
-  const volume_path = "${PWD}" + "/" + config_path;
+  const volume_path = "${HOSTPWD}" + "/" + config_path;
   const frontend = {
     image: `xinfinorg/subnet-frontend:${config.version.frontend}`,
     restart: "always",
@@ -81,7 +81,7 @@ function genServices(machine_id) {
     image: `xinfinorg/subnet-stats-service:${config.version.stats}`,
     restart: "always",
     env_file: config_path,
-    volumes: ["${PWD}/stats-service/logs:/app/logs"],
+    volumes: ["${HOSTPWD}/stats-service/logs:/app/logs"],
     ports: ["5213:5213"],
     profiles: [machine],
   };
@@ -104,7 +104,7 @@ function genSubswapFrontend() {
     image: `xinfinorg/subswap-frontend:${config.version.subswap_frontend}`,
     restart: "always",
     volumes: [
-      "${PWD}/subswap-frontend.config.json:/app/subswap-frontend.config.json",
+      "${HOSTPWD}/subswap-frontend.config.json:/app/subswap-frontend.config.json",
     ],
     ports: ["5216:5216"],
     profiles: ["subswap"],
