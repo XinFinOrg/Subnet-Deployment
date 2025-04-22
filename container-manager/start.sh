@@ -17,8 +17,7 @@ docker run -d                                   \
   -v /var/run/docker.sock:/var/run/docker.sock  \
   -v $current_dir/generated:/mount/generated    \
   -e HOSTPWD=$current_dir/generated             \
-  api-test  \
+  xinfinorg/subnet-generator:latest             \
   && \
-echo 'go to http://localhost:5210 to access Subnet Configuration Generator UI' && \
-echo 'or use ssh tunnel if this is running on your server' && \
-echo 'ssh -N -L localhost:5210:localhost:5210 <username>@<ip_address> -i <private_key_file>' 
+echo 'if this is running on your server, first use ssh tunnel: ssh -N -L localhost:5210:localhost:5210 <username>@<ip_address> -i <private_key_file>' && \
+echo 'Open http://localhost:5210 to access Subnet Deployment Wizard'

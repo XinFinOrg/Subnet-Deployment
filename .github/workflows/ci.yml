@@ -6,7 +6,7 @@ on:
       - master
       - generator*
     paths: 
-      - deployment-generator/**
+      - container-manager/**
     tags: 
       - '*'
   workflow_dispatch: #allow manual trigger to workflow
@@ -18,7 +18,7 @@ jobs:
     environment: DockerHub
     defaults:
       run:
-        working-directory: deployment-generator
+        working-directory: container-manager/
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -41,8 +41,8 @@ jobs:
           
       - name: Build and push image
         run: |
-          docker build . --file docker/Dockerfile                       \
-            --build-arg SUBNET_BRANCH=${{ steps.commit.outputs.commit}} \
+          docker build . --file Dockerfile                               \
+            --build-arg SUBNET_BRANCH=${{ steps.commit.outputs.commit}}  \
             --build-arg IMAGE_NAME=${{ steps.image.outputs.name }}       \
             --tag ${{ steps.image.outputs.name }}
           docker push ${{ steps.image.outputs.name }}
