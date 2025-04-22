@@ -291,7 +291,7 @@ function checkSubswapFrontendStarted(containers){
     const subswap = new URL(window.location.href);
     subswap.port = "5216";
     document.getElementById("subswap-details").innerHTML = `
-<a href="${subswap}" target="_blank">Subswap UI (please wait 2 minutes for loading after startup</a>
+<a href="${subswap}" target="_blank">Subswap UI (please wait 2 minutes for loading after startup)</a>
 <br>
 `;
   }

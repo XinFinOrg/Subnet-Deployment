@@ -21,7 +21,7 @@ const config = {
     process.env.IMAGE_NAME || "xinfinorg/subnet-generator:latest",
   version: {
     genesis: process.env.VERSION_GENESIS || "v0.3.1",
-    subnet: process.env.VERSION_SUBNET || "v0.3.1",
+    subnet: process.env.VERSION_SUBNET || "v0.3.2",
     bootnode: process.env.VERSION_BOOTNODE || "v0.3.1",
     relayer: process.env.VERSION_RELAYER || "v0.3.1",
     stats: process.env.VERSION_STATS || "v0.1.11",
