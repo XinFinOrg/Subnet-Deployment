@@ -418,12 +418,12 @@ function isContractDeployComplete(req) {
   }
 
   if ("zero" in req) {
-    const zero = findENVInFile("ZERO", filepath); //check name
+    const zero = findENVInFile("ZERO_CONTRACT", filepath); //check name
     if (zero.length == 0) return false;
   }
 
   if ("subswap" in req) {
-    const subswap = findENVInFile("SUBSWAP", filepath); //check name
+    const subswap = findENVInFile("_APP", filepath); //check name
     if (subswap.length == 0) return false;
   }
 
