@@ -88,14 +88,13 @@ async function getContainersState() {
     } else if (isSubswap) {
       subswap.push({
         name: nameService,
-        state: containers[i].state
-      })
-    } else if (isExplorer){
+        state: containers[i].state,
+      });
+    } else if (isExplorer) {
       explorer.push({
         name: nameService,
-        state: containers[i].state
-      })
-
+        state: containers[i].state,
+      });
     } else {
       others.push({
         name: nameService,
@@ -233,27 +232,27 @@ function isServiceContainer(container) {
   return [isService, name];
 }
 
-function isSubswapContainer(container){
+function isSubswapContainer(container) {
   container = container.split("-"); //container name format: generated-xxxxx-1, need to extract middle string
   container.pop();
   container.shift();
   const name = container.join();
   if (name.includes("subswap_frontend")) {
-    return true
+    return true;
   } else {
-    return false
+    return false;
   }
 }
 
-function isExplorerContainer(container){
+function isExplorerContainer(container) {
   container = container.split("-"); //container name format: generated-xxxxx-1, need to extract middle string
   container.pop();
   container.shift();
   const name = container.join();
   if (name.includes("explorer")) {
-    return true
+    return true;
   } else {
-    return false
+    return false;
   }
 }
 
@@ -369,9 +368,9 @@ function readDeployedContracts() {
   csc = csc.length > 0 ? csc[0].split("=")[1] : "";
   let reverseCsc = findENVInFile("REVERSE_CHECKPOINT_CONTRACT", filepath);
   reverseCsc = reverseCsc.length > 0 ? reverseCsc[0].split("=")[1] : "";
-  let zeroContract = findENVInFile("ZERO_CONTRACT", filepath); //checkname
+  let zeroContract = findENVInFile("PARENTNET_ZERO_CONTRACT", filepath); //checkname
   zeroContract = zeroContract.length > 0 ? zeroContract[0].split("=")[1] : "";
-  let reverseZeroContract = findENVInFile("REVERSE_ZERO_CONTRACT", filepath); //checkname
+  let reverseZeroContract = findENVInFile("SUBNET_ZERO_CONTRACT", filepath); //checkname
   reverseZeroContract =
     reverseZeroContract.length > 0 ? reverseZeroContract[0].split("=")[1] : "";
   let parentnetApp = findENVInFile("PARENTNET_APP", filepath);

@@ -1,5 +1,5 @@
-let prevBlockNum = 0
-let prevPrevBlockNum = 0
+let prevBlockNum = 0;
+let prevPrevBlockNum = 0;
 
 async function callStateApi(route, outElementId) {
   const outputDiv = document.getElementById(outElementId);
@@ -249,15 +249,19 @@ function checkSubnetStarted(subnetsContainers) {
   }
 }
 
-function checkMiningState(mineInfo){
-  if(!mineInfo) {
-    document.getElementById("mining-status").innerHTML = `Confirm mining status: Not Mining`
-    return
+function checkMiningState(mineInfo) {
+  if (!mineInfo) {
+    document.getElementById(
+      "mining-status"
+    ).innerHTML = `Confirm mining status: Not Mining`;
+    return;
   }
-  if (mineInfo.blocks[0] > prevPrevBlockNum){
-    prevBlockNum = mineInfo.blocks[0]
-    prevPrevBlockNum = prevBlockNum
-    document.getElementById("mining-status").innerHTML = `Confirm mining status: Mining`
+  if (mineInfo.blocks[0] > prevPrevBlockNum) {
+    prevBlockNum = mineInfo.blocks[0];
+    prevPrevBlockNum = prevBlockNum;
+    document.getElementById(
+      "mining-status"
+    ).innerHTML = `Confirm mining status: Mining`;
   }
 }
 
@@ -281,7 +285,7 @@ function checkServicesStarted(servicesContainers) {
   }
 }
 
-function checkSubswapFrontendStarted(containers){
+function checkSubswapFrontendStarted(containers) {
   if (containers.length == 0) {
     document.getElementById("start-subswap-button").disabled = false;
     document.getElementById("stop-subswap-button").disabled = true;
@@ -297,7 +301,7 @@ function checkSubswapFrontendStarted(containers){
   }
 }
 
-function checkExplorerStarted(containers){
+function checkExplorerStarted(containers) {
   if (containers.length == 0) {
     document.getElementById("start-explorer-button").disabled = false;
     document.getElementById("stop-explorer-button").disabled = true;
