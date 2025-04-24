@@ -123,7 +123,7 @@ function configSanityCheck(config) {
     let official_urls = {
       devnet: "https://devnetstats.apothem.network/devnet",
       testnet: "https://erpc.apothem.network/",
-      mainnet: "https://rpc.xdc.org",
+      mainnet: "https://rpc.xinfin.network",
     };
     console.log("debug")
     console.log(config.parentnet.network)
