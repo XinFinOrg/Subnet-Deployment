@@ -7,6 +7,7 @@ const instance = axios.create({
 });
 const fs = require("fs");
 const path = require("path");
+const { env } = require("process");
 const mountPath = path.join(__dirname, "../../mount/generated/");
 
 module.exports = {
@@ -412,18 +413,20 @@ function readConfig() {
 function isContractDeployComplete(req) {
   const filepath = path.join(mountPath, "common.env");
   if ("relayer" in req) {
-    const relayer = findENVInFile("CHECKPOINT_CONTRACT", filepath); //check name
+    const relayer = findENVInFile("CHECKPOINT_CONTRACT", filepath);
     if (relayer.length == 0) return false;
   }
 
   if ("zero" in req) {
-    const zero = findENVInFile("ZERO_CONTRACT", filepath); //check name
-    if (zero.length == 0) return false;
+    const parentZero = findENVInFile("PARENTNET_ZERO_CONTRACT", filepath);
+    const subnetZero = findENVInFile("SUBNET_ZERO_CONTRACT", filepath);
+    if (parentZero.length == 0 && subnetZero.length == 0) return false;
   }
 
   if ("subswap" in req) {
-    const subswap = findENVInFile("_APP", filepath); //check name
-    if (subswap.length == 0) return false;
+    const parentSubswap = findENVInFile("PARENTNET_APP", filepath); 
+    const subnetSubswap = findENVInFile("SUBNET_APP", filepath); 
+    if (parentSubswap.length == 0 && subnetSubswap.length == 0) return false;
   }
 
   return true;
