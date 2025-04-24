@@ -125,7 +125,10 @@ function configSanityCheck(config) {
       testnet: "https://erpc.apothem.network/",
       mainnet: "https://rpc.xdc.org",
     };
+    console.log("debug")
+    console.log(config.parentnet.network)
     config.parentnet.url = official_urls[config.parentnet.network];
+    console.log(config.parentnet.url)
   } else {
     console.log("PARENTNET must be devnet or testnet");
     process.exit(1);

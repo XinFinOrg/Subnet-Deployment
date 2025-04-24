@@ -7,9 +7,9 @@ const gen_env = require("./gen_env");
 const gen_other = require("./gen_other");
 
 const config = configModule.config;
+configModule.configSanityCheck(config);
 Object.freeze(config);
 console.log("config", config);
-configModule.configSanityCheck(config);
 
 // const num_machines = config.num_machines
 // const num_subnet = config.num_subnet
