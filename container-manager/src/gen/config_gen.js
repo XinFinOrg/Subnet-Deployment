@@ -2,8 +2,7 @@ const crypto = require("crypto");
 const net = require("net");
 const dotenv = require("dotenv");
 const ethers = require("ethers");
-dotenv.config({ path: `${__dirname}/gen.env` });
-// console.log(__dirname)
+dotenv.config({ path: `${__dirname}/../../mount/generated/gen.env` });
 
 const config = {
   deployment_path: process.env.CONFIG_PATH || "",
@@ -21,17 +20,16 @@ const config = {
   docker_image_name:
     process.env.IMAGE_NAME || "xinfinorg/subnet-generator:latest",
   version: {
-    subnet: process.env.VERSION_SUBNET || "v0.3.1",
+    genesis: process.env.VERSION_GENESIS || "v0.3.1",
+    subnet: process.env.VERSION_SUBNET || "v0.3.2",
     bootnode: process.env.VERSION_BOOTNODE || "v0.3.1",
     relayer: process.env.VERSION_RELAYER || "v0.3.1",
     stats: process.env.VERSION_STATS || "v0.1.11",
     frontend: process.env.VERSION_FRONTEND || "v0.1.12",
-    // csc: process.env.VERSION_CSC || "v0.3.0",
-    csc: process.env.VERSION_CSC || "feature-v0.3.0",
-    // zero: process.env.VERSION_ZERO || "v0.3.0",
-    zero: process.env.VERSION_ZERO || "feature-v0.3.0",
+    csc: process.env.VERSION_CSC || "v0.3.0",
+    zero: process.env.VERSION_ZERO || "v0.3.0",
     subswap_frontend:
-      process.env.VERSION_SUBSWAP_FRONTEND || "feature-dockerize",
+      process.env.VERSION_SUBSWAP_FRONTEND || "v0.1.0",
     explorer: process.env.VERSION_EXPLORER || "v0.1.0",
   },
   parentnet: {
@@ -54,16 +52,20 @@ const config = {
     subswap: process.env.SUBSWAP || "",
   },
   generator: {
-    output_path: `${__dirname}/../generated/`,
+    output_path: `${__dirname}/../../mount/generated/`,
   },
 };
 
-if (configSanityCheck(config) === true) {
-  module.exports = config;
-} else {
-  console.log("bad config init file, please check again");
-  process.exit();
-}
+// if (configSanityCheck(config) === true) {
+// module.exports = config;
+// } else {
+// console.log("bad config init file, please check again");
+// process.exit();
+// }
+module.exports = {
+  config,
+  configSanityCheck,
+};
 
 function validatePK(private_key) {
   let wallet = new ethers.Wallet(private_key);
@@ -119,9 +121,12 @@ function configSanityCheck(config) {
     let official_urls = {
       devnet: "https://devnetstats.apothem.network/devnet",
       testnet: "https://erpc.apothem.network/",
-      mainnet: "https://rpc.xdc.org",
+      mainnet: "https://rpc.xinfin.network",
     };
+    console.log("debug")
+    console.log(config.parentnet.network)
     config.parentnet.url = official_urls[config.parentnet.network];
+    console.log(config.parentnet.url)
   } else {
     console.log("PARENTNET must be devnet or testnet");
     process.exit(1);

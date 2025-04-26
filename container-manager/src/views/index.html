@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subnet Deployment Wizard</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body onload="fetchLoop()">
+  <div id="body-wrap" class="body-wrap">
+    <div class="container">
+      <h1>Subnet Deployment Wizard</h1>
+      <div class="left-aligned">
+        <div>
+          <div>1. Select Subnet Configuration</div> 
+          <div>
+            <button id="gen_button_1_tn" class="button gen-button" onclick="generate1('testnet', false)">1-Node Subnet (Testnet)</button>
+            <button id="gen_button_1_tn_ss" class="button gen-button" onclick="generate1('testnet', true)">1-Node Subnet with Subswap (Testnet)</button>
+            <button id="gen_button_3_tn_ss" class="button gen-button" onclick="generate3('testnet', true)">3-Node Subnet with Subswap (Testnet)</button>
+          </div>
+          <div>
+            <button id="gen_button_1_mn" class="button gen-button" onclick="generate1('mainnet', false)">1-Node Subnet (Mainnet)</button>
+            <button id="gen_button_1_mn_ss" class="button gen-button" onclick="generate1('mainnet', true)">1-Node Subnet with Subswap (Mainnet)</button>
+            <button id="gen_button_3_mn_ss" class="button gen-button" onclick="generate3('mainnet', true)">3-Node Subnet with Subswap (Mainnet)</button>
+          </div>
+          <div>
+            <button id="gen_button_custom" class="button gen-button" onclick="window.open('/gen', '_blank')">Custom Subnet</button>
+          </div>
+        </div>
+        <div>
+          <div id="copy-instruction"></div>
+          <div>2. Start Subnet</div>
+          <button id="start-subnet-button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+          <button id="stop-subnet-button" class="button" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
+          &nbsp;&nbsp;<div id="mining-status">Confirm mining status: Not Mining</div>
+          <br>
+        </div>
+        <div >
+          <div id="mainnet-testnet-info">3. Add Mainnet/Testnet balance </div>
+          <div class="display-address">
+            <div id="parentnet-wallet"></div>
+            <div id="parentnet-zero-wallet"></div>
+          </div>
+          <div id="testnet-faucet-info">
+            <div>&emsp;Testnet Faucets: </div>
+            <div>
+              &emsp;&emsp;<a href="https://faucet.blocksscan.io/ " target="_blank">Testnet(Apothem) Faucet by BlocksScan</a> 
+            </div>
+            <div>
+              &emsp;&emsp;<a href="https://faucet.apothem.network/" target="_blank">Testnet(Apothem) Faucet</a> 
+            </div>
+          </div>
+          <br>
+        </div>
+        <!-- <div id="subnet-faucet-info">
+          <div>3. Add Subnet balance to: </div>
+          <div id="subnet-wallet"></div>
+          <div id="subnet-zero-wallet"></div>
+          &emsp;<a href="/faucet" target="_blank">Subnet Faucet</a>
+        </div> -->
+        <br>
+        <div>
+          <div>4. Deploy Smart Contracts</div>
+          <button id="button-csc-lite" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_lite', 'output')">Deploy CSC Lite</button>
+          <button id="button-csc-full" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_full', 'output')">Deploy CSC Full</button>
+          <button id="button-reverse-csc" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_reversefull', 'output')">Deploy CSC Reverse</button>
+          <button id="button-subswap" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_subswap', 'output')">Deploy Subswap</button> 
+        </div>
+        <div>
+          <div>5. Start Required Services</div>
+          <button id="start-services-button" class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
+          <button id="stop-services-button" class="button" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
+          <div id="services-details"></div>
+        </div>
+        <div>
+          <div>6. Start Optional Services</div>
+          <div>
+            <button id="start-subswap-button" class="button" onclick="callStreamApi('/start_subswap_frontend', 'output')">Start Subswap Frontend</button>
+            <button id="stop-subswap-button" class="button" onclick="callStreamApi('/stop_subswap_frontend', 'output')">Stop Subswap Frontend</button>
+          </div>
+          <div id="subswap-details"></div>
+          <!-- <div> -->
+            <!-- <button id="start-explorer-button" class="button" onclick="callStreamApi('/start_explorer', 'output')">Start XDC Explorer</button> -->
+            <!-- <button id="stop-explorer-button" class="button" onclick="callStreamApi('/stop_explorer', 'output')">Stop XDC Explorer</button> -->
+          <!-- </div> -->
+        </div>
+      </div>
+      <div id="history-text"></div>
+      <div id="history">
+      </div>
+    </div>
+
+    <div class="container">
+      <h1>Status</h1>
+      <div id="state" class="output-status" >Status: Loading...</div>
+    </div>
+  </div>
+
+  <!-- <div> Ref and docs
+    https://docs.xdc.network/subnet/install_guide/launch_subnet/
+    https://github.com/XinFinOrg/XDC-Subnet
+  </div> -->
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+<!-- 
+steps:
+  1. Generate ... done checkmark
+    gen button 
+
+  2a. copy subnet files if multiple machine 
+  2b. start Subnet ... done checkmark
+    start button
+  3. deploy CSC ... done checkmark
+    deploy button 
+  4. deploy crosschain ... done checkmark
+    deploy button
+  5. start services ... done checkmark
+
+  5a. show links to services view page << how this works locally vs on server?
+
+  6. start explorer (optional) 
+
+  
+  
+  -->

@@ -1,13 +1,15 @@
 const fs = require("fs");
 const yaml = require("js-yaml");
 const { exit } = require("process");
+const configModule = require("./config_gen");
 const gen_compose = require("./gen_compose");
 const gen_env = require("./gen_env");
 const gen_other = require("./gen_other");
-const configModule = require("./config_gen");
+
 const config = configModule.config;
+configModule.configSanityCheck(config);
 Object.freeze(config);
-// console.log(config)
+console.log("config", config);
 
 // const num_machines = config.num_machines
 // const num_subnet = config.num_subnet
@@ -80,8 +82,6 @@ const deployconf = gen_env.genContractDeployEnv(ip_record);
 
 const compose_content = yaml.dump(doc, {});
 
-// deployment commands list
-const commands = gen_other.genCommands();
 const genesis_input = gen_other.genGenesisInputFile(
   config.network_name,
   config.network_id,
@@ -93,9 +93,14 @@ const genesis_input_file = yaml.dump(genesis_input, {});
 writeGenerated(config.generator.output_path);
 copyScripts(config.generator.output_path);
 
-console.log("gen successful, follow the instructions in command.txt");
+console.log("gen successful");
 
 function writeGenerated(output_dir) {
+  // const pathCommand =
+  //   `cd ${mountPath};\n` +
+  //   `export PWD=${config.hostPath};\n` +
+  //   `${command}
+
   // writing files
   // fs.rmSync(`${output_path}`, { recursive: true, force: true }); //wont work with docker mount
   // fs.mkdirSync(`${output_path}`) //won't work with docker mount
@@ -162,13 +167,6 @@ function writeGenerated(output_dir) {
       }
     }
   );
-
-  fs.writeFileSync(`${output_dir}/commands.txt`, commands, (err) => {
-    if (err) {
-      console.error(err);
-      exit();
-    }
-  });
 }
 
 function copyScripts(output_dir) {
@@ -179,35 +177,23 @@ function copyScripts(output_dir) {
     }
   });
   fs.copyFileSync(
-    `${__dirname}/../scripts/check-mining.sh`,
+    `${__dirname}/scripts/check-mining.sh`,
     `${output_dir}/scripts/check-mining.sh`
   );
   fs.copyFileSync(
-    `${__dirname}/../scripts/check-peer.sh`,
+    `${__dirname}/scripts/check-peer.sh`,
     `${output_dir}/scripts/check-peer.sh`
   );
-  // fs.copyFileSync(
-  //   `${__dirname}/../scripts/docker-up.sh`,
-  //   `${output_dir}/scripts/docker-up.sh`
-  // );
-  // fs.copyFileSync(
-  //   `${__dirname}/../scripts/docker-down.sh`,
-  //   `${output_dir}/scripts/docker-down.sh`
-  // );
-  // fs.copyFileSync(
-  //   `${__dirname}/../scripts/csc.sh`,
-  //   `${output_dir}/scripts/csc.sh`
-  // );
   fs.copyFileSync(
-    `${__dirname}/../scripts/faucet.sh`,
+    `${__dirname}/scripts/faucet.sh`,
     `${output_dir}/scripts/faucet.sh`
   );
   fs.copyFileSync(
-    `${__dirname}/../scripts/faucet-server.sh`,
+    `${__dirname}/scripts/faucet-server.sh`,
     `${output_dir}/scripts/faucet-server.sh`
   );
   fs.copyFileSync(
-    `${__dirname}/../scripts/add-node.sh`,
+    `${__dirname}/scripts/add-node.sh`,
     `${output_dir}/scripts/add-node.sh`
   );
 }
