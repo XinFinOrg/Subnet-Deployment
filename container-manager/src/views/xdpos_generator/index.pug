@@ -1,0 +1,217 @@
+head
+  meta(charset='utf-8')
+  title XDPoS Privatechain Generator
+  style
+    include ./pure-min.css
+    include ./custom.css
+
+
+body
+  center
+    h1 XDPoS Privatechain Generator
+
+  //- form.pure-form.pure-form-aligned#myForm(onsubmit="return validateForm()")
+  form.pure-form.pure-form-aligned#myForm(action="/submit_xdpos" method="post" onsubmit="return validateForm()")
+    center   
+      h3 Configuration
+    fieldset
+      .pure-control-group 
+        .info-container 
+          .info-icon(tabindex="0" role="button" aria-label="more info") ?
+          .tooltip This cannot be changed later.
+        label() Network Name
+        input#text-subnet-name(type='text' placeholder='privatechain' value='privatechain' name="text-subnet-name")
+        span.pure-form-message-inline Required
+
+      .pure-control-group
+        .info-container 
+          .info-icon(tabindex="0" role="button" aria-label="more info") ?
+          .tooltip At least 2/3 of nodes must be online to have consensus and make the blockchain run.
+        label() Number of Masternodes
+        input#text-num-subnet(type='number' placeholder='3' value='3' name="text-num-subnet")
+        span.pure-form-message-inline Required
+
+      .pure-control-group 
+        .info-container
+          .info-icon(tabindex="0" role="button" aria-label="more info") ?
+          .tooltip The generated configs will evenly spread the nodes across the machines.
+        label() Number of Machines
+        input#text-num-machine(type='number' placeholder='1' value='1' name="text-num-machine" oninput="numMachineMoreThanOne()")
+
+      input#checkbox-num-machine(type='checkbox' name='checkbox-num-machine')
+
+      #ipoption.content
+        .pure-control-group 
+          .info-container 
+            .info-icon(tabindex="0" role="button" aria-label="more info") ?
+            .tooltip Main machine will deploy bootnode, it should be reachable by all machines
+          label() Main Machine IP Address
+          input#text-private-ip(type='text' placeholder='192.168.1.1' name="text-private-ip")
+          span.pure-form-message-inline Required
+
+      .pure-control-group 
+        .info-container 
+          .info-icon(tabindex="0" role="button" aria-label="more info") ?
+          .tooltip Owner delegates stake to Masternode Addresses
+        label.pure-checkbox(for='customowner-checkbox') Custom Masternodes Owner PK
+        input#customowner-checkbox.checkbox-indent(type='checkbox' name="customowner-checkbox")
+        #customowner.content
+          center 
+          .pure-control-group 
+            label() Masternodes Owner
+            input#customowner-pk.pure-input-2-3(type='text' placeholder='0x1111111111111111111111111111111111111111111111111111111111111111' name="customowner-pk")
+
+      .pure-control-group 
+        .info-container 
+          .info-icon(tabindex="0" role="button" aria-label="more info") ?
+          .tooltip Default is random
+        label.pure-checkbox(for='customkeys-checkbox') Custom Masternode Keys
+        input#customkeys-checkbox.checkbox-indent(type='checkbox' name="customkeys-checkbox" onchange="customSubnetKeyJs()")
+        #customkeys.content
+          center
+            //- button.pure-button.pure-button-primary#button-custom-subnet-key(type="button" onclick="customSubnetKeyJs()") Custom Subnet Node Keys
+          #custom-subnet-key-placeholder
+
+      .pure-control-group 
+        .info-container 
+          .info-icon(tabindex="0" role="button" aria-label="more info") ?
+          .tooltip Default to stable
+        label.pure-checkbox(for='customversion-checkbox') Custom Node Version
+        input#customversion-checkbox.checkbox-indent(type='checkbox' name="customversion-checkbox")
+        #customversion.content
+          center 
+          .pure-control-group 
+            label() Full Node Version
+            input#customversion-xdpos-node-fullname.pure-input(type='text' placeholder='xinfinorg/xdposchain:v2.6.4-beta' name="customversion-xdpos-node-fullname")
+          .pure-control-group 
+            label() Full Genesis Version
+            input#customversion-xdpos-genesis-fullname.pure-input(type='text' placeholder='xinfinorg/xdposchain:v2.6.4-beta' name="customversion-xdpos-genesis-fullname")
+
+      .pure-control-group
+        .info-container
+          .info-icon(tabindex="0" role="button" aria-label="more info") ?
+          .tooltip Rewards config
+        label.pure-checkbox(for='customrewards-checkbox') Custom Rewards
+        input#customrewards-checkbox.checkbox-indent(type='checkbox' name="customrewards-checkbox")
+        #customrewards.content
+          center 
+          .pure-control-group
+            label() Minimum Stake to Become Masternode
+            input#customrewards-text-minimum-stake(type='text' placeholder='10000000' name="customrewards-text-minimum-stake")
+          .pure-control-group
+            label() Masternode Rewards APY
+            input#customrewards-text-apy(type='text' placeholder='10' name="customrewards-text-apy")
+          .pure-control-group
+            label() Foundation Wallet PK (Address to receive 10% of all rewards)
+            input#customrewards-text-foundation-pk.pure-input-2-3(type='text' placeholder='0x1111111111111111111111111111111111111111111111111111111111111111' name="customrewards-text-foundation-pk")
+
+    center
+      #incomplete-required-warning
+    .pure-controls
+      button.pure-button.pure-button-primary(type='submit') Submit
+
+
+    center
+      h3#helper-title Helpers
+    .helper-block
+      h4 Address Generator
+      p#address-gen-pub Address:  
+      p#address-gen-pk Private Key: 
+      #disclaim-wrap
+        button.pure-button.pure-button-primary(type="button" onclick="genAddress()") Generate Address 
+        h8#disclaimer  *Generation is done locally on your machine, fully offline.   
+
+script.
+  function customSubnetKeyJs(){
+    const parent = document.getElementById("custom-subnet-key-placeholder")
+    const count = document.getElementById("text-num-subnet").value
+    if (!count) {
+      parent.innerHTML = '';
+      const cen = document.createElement("center")
+      const para = document.createElement("p")
+      para.innerHTML = "Please first input 'Number of Masternodes'"
+      cen.appendChild(para)
+      parent.appendChild(cen)
+    } else {
+      parent.innerHTML = '';
+      for (i=1;i<=count;i++){
+        var d = document.createElement("div")
+        d.setAttribute("class", "pure-control-group")
+        const label = document.createElement("label")
+        label.innerHTML = "Masternode " + i + " PK"
+        const input = document.createElement("input")
+        const id = "subnet-key"+i
+        input.setAttribute("id", id)
+        input.setAttribute("name", id)
+        input.setAttribute("class", "pure-input-2-3")
+        input.setAttribute("type", "text")
+        input.setAttribute("placeholder", "0x1111111111111111111111111111111111111111111111111111111111111111")
+
+        d.appendChild(label)
+        d.appendChild(input)
+        parent.appendChild(d)
+      }
+    }
+  }
+  function numMachineMoreThanOne(){
+    const num = document.getElementById("text-num-machine")
+    const hiddenbox = document.getElementById("checkbox-num-machine")
+    if (num.value > 1){
+      hiddenbox.checked = true;
+    } else {
+      hiddenbox.checked = false;
+      const text1 = document.getElementById("text-private-ip")
+      const text2 = document.getElementById("text-public-ip")
+      text1.value = ""
+      text2.value = ""
+    }
+  }
+
+  function relayerLiteClicked(radio){
+    const checkbox = document.getElementById("xdczero-checkbox")
+    checkbox.checked = false;
+    checkbox.disabled = true;
+    //- document.getElementById("lite-mode-extra-info").innerHTML="Cannot use XDC-Zero with Lite Relayer"
+  }
+
+  function relayerFullClicked(radio){
+    const checkbox = document.getElementById("xdczero-checkbox")
+    checkbox.disabled = false;
+  }
+
+  function validateForm(){
+    console.log('validateForm called')
+    const form = document.forms["myForm"]
+
+    if (form["text-subnet-name"] == "" || form["text-num-subnet"] == "" || form["text-minimum-stake"] == "" || form ["text-reward-apy"] == ""){
+      document.getElementById("incomplete-required-warning").innerHTML="Please fill in all required fields"
+      return false
+    }
+
+    const num_machines = form["text-num-machine"].value;
+    if (num_machines > 1){
+      const private_ip = form["text-private-ip"].value;
+      if (private_ip == ""){
+        document.getElementById("incomplete-required-warning").innerHTML="Please fill in all required fields"
+        return false
+      }
+    }
+
+    document.getElementById("incomplete-required-warning").innerHTML=""
+    console.log("pass")    
+    return true
+  }
+
+  function genAddress(){
+    fetch('/address')
+      .then(response => response.json())
+        .then(data => {
+          document.getElementById("address-gen-pub").innerHTML="Address: "+data["publicKey"]
+          document.getElementById("address-gen-pk").innerHTML="Private Key: "+data["privateKey"]
+          })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById("address-gen-pub").innerHTML="Error Generating Address"
+          document.getElementById("address-gen-pk").innerHTML="Error Generating Address"
+          });
+  }
