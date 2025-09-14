@@ -167,7 +167,7 @@ function generateXdpos(params) {
   console.log("gen success");
 
   //step 2: generate genesis.json
-  let versionGenesisFullname = "test-privnet:latest";
+  let versionGenesisFullname = "xinfinorg/devnet:dev-upgrade-53e5601";
   if (
     "customversion-checkbox" in params && 
     params["customversion-checkbox"] != "" && 
