@@ -55,7 +55,7 @@ const config = {
     output_path: `${__dirname}/../../mount/generated/`,
   },
   xdpos: {
-    xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/xdposchain:v2.6.4-beta",
+    xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/devnet:dev-upgrade-53e5601",
     stake_threshold: parseInt(process.env.MASTERNODE_MINIMUM_STAKE) || "",
     reward_yield: parseInt(process.env.REWARDS_YIELD) || "",
     foundation_addr: "",
