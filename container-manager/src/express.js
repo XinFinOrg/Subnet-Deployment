@@ -119,6 +119,10 @@ app.get("/gen", (req, res) => {
   res.render("generator/index.pug", {});
 });
 
+app.get("/gen_xdpos", (req, res) => {
+  res.render("xdpos_generator/index.pug", {});
+});
+
 app.post("/submit", (req, res) => {
   console.log("/submit called");
   const [valid, genOut] = exec.generate(req.body);
@@ -133,6 +137,23 @@ app.post("/submit", (req, res) => {
       message:
         "Config generation success, please continue in the Deployment Wizard tab",
     });
+  }
+});
+
+app.post("/submit_xdpos", (req, res) => {
+  console.log("/submit_xdpos called");
+  const [valid, genOut] = exec.generateXdpos(req.body);
+  if (!valid) {
+    res.render("xdpos_generator/submit.pug", {
+      message: "failed, please try again",
+      error: genOut,
+    });
+  } else {
+    res.render("xdpos_generator/submit.pug", {
+      message:
+        "Config generation success, please continue with 'cd generated;' then './docker-up.sh machine1;'",
+    });
+    process.exit(0);
   }
 });
 

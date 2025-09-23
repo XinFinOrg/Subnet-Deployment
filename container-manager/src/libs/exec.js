@@ -16,6 +16,7 @@ module.exports = {
   startSubnetGradual,
   removeSubnet,
   generate,
+  generateXdpos,
   processTransfer,
 };
 
@@ -144,6 +145,42 @@ async function execute(command, outputHandler, doneHandler) {
   });
 
   return prom;
+}
+
+function generateXdpos(params) {
+  genEnv = genGenXdposEnv(params);
+  fs.writeFileSync(path.join(mountPath, "gen.env"), genEnv, (err) => {
+    //write to mount
+    if (err) {
+      console.error(err);
+      exit();
+    }
+  });
+
+  //step 1: generate config files
+  let command = `cd ${__dirname}/../gen; node gen_xdpos.js`;
+  console.log(command);
+  const [result, out] = callExec(command);
+  if (!result) {
+    return [result, out];
+  }
+  console.log("gen success");
+
+  //step 2: generate genesis.json
+  let versionGenesisFullname = "xinfinorg/devnet:dev-upgrade-53e5601";
+  if (
+    "customversion-checkbox" in params && 
+    params["customversion-checkbox"] != "" && 
+    "customversion-xdpos-genesis-fullname" in params && 
+    params["customversion-xdpos-genesis-fullname"] != ""
+  ) {
+    versionGenesisFullname = `${params["customversion-xdpos-genesis-fullname"]}`;
+  }
+
+  command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
+  console.log(command);
+  const [result2, out2] = callExec(command);
+  return [result2, out2];
 }
 
 function generate(params) {
@@ -293,6 +330,75 @@ RELAYER_MODE=${relayer_mode}
   content += content_version;
   content += "\n";
   content += content_zero;
+
+  console.log(content);
+
+  return content;
+}
+
+function genGenXdposEnv(input){
+  console.log(input);
+  let content_machine = "";
+  if (input["text-num-machine"] > 1) {
+    content_machine += `\nMAIN_IP=${input["text-private-ip"]}`;
+    if (input["text-public-ip"] != "") {
+      content_machine += `\nPUBLIC_IP=${input["text-public-ip"]}`;
+    }
+    if (input["text-num-machine"] != "") {
+      content_machine += `\nNUM_MACHINE=${input["text-num-machine"]}`;
+    }
+  } else {
+    content_machine += `\nMAIN_IP=127.0.0.1`;
+    content_machine += `\nNUM_MACHINE=1`;
+  } 
+
+  let content_custom_key = "";
+  if ("customowner-checkbox" in input && input["customowner-checkbox"] != "" && "customowner-pk" in input && input["customowner-pk"] != "") {
+    content_custom_key += `\nGRANDMASTER_PK=${input["customowner-pk"]}`;
+  }
+  if ("customkeys-checkbox" in input && input["customkeys-checkbox"] != "") {
+    let subnet_keys = [];
+    let idx = 1;
+    while ("subnet-key" + idx.toString() in input) {
+      key = "subnet-key" + idx.toString();
+      subnet_keys.push(input[key]);
+      idx++;
+    }
+    if (subnet_keys.length > 0) {
+      key_string = subnet_keys.join(",");
+      content_custom_key += `\nSUBNETS_PK=${key_string}`;
+    }
+  }
+
+  let content_version = "";
+  if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-node-fullname" in input && input["customversion-xdpos-node-fullname"] != "") {
+    content_version += `\nVERSION_NODE_IMAGE=${input["customversion-xdpos-node-fullname"]}`;
+  }
+
+  let content_rewards = "";
+  if ("customrewards-checkbox" in input && input["customrewards-checkbox"] != "") {
+    if("customrewards-text-minimum-stake" in input && input["customrewards-text-minimum-stake"] != ""){
+      content_rewards += `\nMASTERNODE_MINIMUM_STAKE=${input["customrewards-text-minimum-stake"]}`;
+    }
+    if("customrewards-text-apy" in input && input["customrewards-text-apy"] != ""){
+      content_rewards += `\nREWARDS_YIELD=${input["customrewards-text-apy"]}`;
+    }
+    if("customrewards-text-foundation-pk" in input && input["customrewards-text-foundation-pk"] != ""){
+      content_rewards += `\nFOUNDATION_PK=${input["customrewards-text-foundation-pk"]}`;
+    }
+  }
+
+  content = `
+NETWORK_NAME=${input["text-subnet-name"]}
+NUM_SUBNET=${input["text-num-subnet"]}
+`;
+  content += content_machine;
+  content += "\n";
+  content += content_custom_key;
+  content += "\n";
+  content += content_rewards;
+  content += "\n";
+  content += content_version;
 
   console.log(content);
 
