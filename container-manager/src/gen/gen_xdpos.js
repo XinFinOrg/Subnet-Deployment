@@ -182,6 +182,11 @@ function initConfig(config) {
     process.exit(1);
   }
 
+  if (config.num_nethermind < 0 || config.num_nethermind > config.num_subnet) {
+    console.log("NUM_NETHERMIND must be between 0 and NUM_SUBNET");
+    process.exit(1);
+  }
+
   if (net.isIP(config.main_ip) != 0) {
     console.log("MAIN_IP Invalid IP address");
     process.exit(1);

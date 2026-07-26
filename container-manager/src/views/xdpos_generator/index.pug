@@ -1,6 +1,6 @@
 head
   meta(charset='utf-8')
-  title XDPoS Privatechain Generator
+  title XDPoS Privatechain Generator V3
   style
     include ./pure-min.css
     include ./custom.css
@@ -8,7 +8,7 @@ head
 
 body
   center
-    h1 XDPoS Privatechain Generator
+    h1 XDPoS Privatechain Generator V3
 
   //- form.pure-form.pure-form-aligned#myForm(onsubmit="return validateForm()")
   form.pure-form.pure-form-aligned#myForm(action="/submit_xdpos" method="post" onsubmit="return validateForm()")
@@ -81,11 +81,17 @@ body
         #customversion.content
           center 
           .pure-control-group 
-            label() Full Node Version
+            label() Node Version
             input#customversion-xdpos-node-fullname.pure-input(type='text' placeholder='xinfinorg/devnet:dev-upgrade-53e5601' name="customversion-xdpos-node-fullname")
           .pure-control-group 
-            label() Full Genesis Version
+            label() Genesis Version
             input#customversion-xdpos-genesis-fullname.pure-input(type='text' placeholder='xinfinorg/devnet:dev-upgrade-53e5601' name="customversion-xdpos-genesis-fullname")
+          .pure-control-group 
+            label() Number of Nethermind Nodes
+            input#customversion-xdpos-nethermind-count.pure-input(type='number' placeholder='0' name="customversion-xdpos-nethermind-count")
+          .pure-control-group 
+            label() Nethermind Node Version
+            input#customversion-xdpos-nethermind-version.pure-input(type='text' placeholder='nethermindeth/nethermind:master-857da8f' name="customversion-xdpos-nethermind-version")
 
       .pure-control-group
         .info-container

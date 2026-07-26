@@ -8,6 +8,7 @@ const config = {
   deployment_path: process.env.CONFIG_PATH || "",
   num_machines: parseInt(process.env.NUM_MACHINE),
   num_subnet: parseInt(process.env.NUM_SUBNET),
+  num_nethermind: parseInt(process.env.NUM_NETHERMIND) || 0,
   ip_1: process.env.MAIN_IP || "",
   public_ip: process.env.PUBLIC_IP || process.env.MAIN_IP,
   network_name: process.env.NETWORK_NAME,
@@ -56,6 +57,7 @@ const config = {
   },
   xdpos: {
     xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/devnet:dev-upgrade-53e5601",
+    nethermind: process.env.VERSION_NETHERMIND_IMAGE || "nethermindeth/nethermind:master-857da8f",
     stake_threshold: parseInt(process.env.MASTERNODE_MINIMUM_STAKE) || "",
     reward_yield: parseInt(process.env.REWARDS_YIELD) || "",
     foundation_addr: "",

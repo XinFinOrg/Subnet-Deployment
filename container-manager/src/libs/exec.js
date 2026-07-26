@@ -374,6 +374,14 @@ function genGenXdposEnv(input){
   if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-node-fullname" in input && input["customversion-xdpos-node-fullname"] != "") {
     content_version += `\nVERSION_NODE_IMAGE=${input["customversion-xdpos-node-fullname"]}`;
   }
+  if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-nethermind-count" in input && input["customversion-xdpos-nethermind-count"] != "") {
+    content_version += `\nNUM_NETHERMIND=${input["customversion-xdpos-nethermind-count"]}`;
+  }
+  if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-nethermind-version" in input && input["customversion-xdpos-nethermind-version"] != "") {
+    content_version += `\nVERSION_NETHERMIND_IMAGE=${input["customversion-xdpos-nethermind-version"]}`;
+  }
+
+
 
   let content_rewards = "";
   if ("customrewards-checkbox" in input && input["customrewards-checkbox"] != "") {
