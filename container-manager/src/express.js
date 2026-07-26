@@ -22,6 +22,46 @@ app.use(
 );
 app.use(express.json());
 
+// NON_SUBNET mode: when NON_SUBNET=true, block every subnet-management route
+// (including the wizard landing page "/") so only the XDPoS private-network
+// generator (/gen_xdpos, /submit_xdpos) remains reachable.
+const NON_SUBNET = process.env.NON_SUBNET === "true";
+const SUBNET_ROUTES = [
+  "/",
+  "/debug",
+  "/state",
+  "/deploy_csc_lite",
+  "/deploy_csc_full",
+  "/deploy_csc_reversefull",
+  "/deploy_zero",
+  "/deploy_subswap",
+  "/start_subnet",
+  "/stop_subnet",
+  "/start_subnet_slow",
+  "/start_services",
+  "/stop_services",
+  "/start_subswap_frontend",
+  "/stop_subswap_frontend",
+  "/start_explorer",
+  "/stop_explorer",
+  "/remove_subnet",
+  "/gen",
+  "/submit",
+  "/submit_preconfig",
+  "/faucet",
+  "/faucet_subnet",
+];
+
+app.use((req, res, next) => {
+  if (NON_SUBNET && SUBNET_ROUTES.includes(req.path)) {
+    console.log(`NON_SUBNET: blocked ${req.path}`);
+    return res
+      .status(403)
+      .json({ error: "Subnet routes are disabled (NON_SUBNET mode)" });
+  }
+  next();
+});
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });

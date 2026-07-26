@@ -27,6 +27,7 @@ docker run -d                                   \
   -v /var/run/docker.sock:/var/run/docker.sock  \
   -v $current_dir/generated:/mount/generated    \
   -e HOSTPWD=$current_dir/generated             \
+  -e NON_SUBNET=true                            \
   xinfinorg/subnet-generator:$version           \
   && \
 echo '' && \
