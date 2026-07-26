@@ -157,7 +157,9 @@ function injectNetworkConfig(compose_object) {
   Object.entries(compose_object["services"]).forEach((entry) => {
     const [key, value] = entry;
     let component_ip;
-    if (key.startsWith("subnet")) {
+    if (key === "bootnode") {
+      component_ip = ip_string_base + "254"; // fixed, predictable bootnode IP
+    } else if (key.startsWith("subnet")) {
       component_ip = ip_string_base + parseInt(start_ip_subnet);
       start_ip_subnet += 1;
     } else {
