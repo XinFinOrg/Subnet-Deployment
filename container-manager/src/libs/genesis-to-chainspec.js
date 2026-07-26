@@ -99,13 +99,22 @@ const DEFAULT_PARAMS = {
 // Engine constants not present in genesis.json (copied from chainspec.json).
 const DEFAULT_ENGINE = {
   mergeSignRange: 15,
+  RangeReturnSigner: 150,
   tip2019Block: 1,
   DynamicGasLimitBlock: 0,
+  TipXDCX: 0,
   blackListHFNumber: 0,
+  TipTrc21Fee: 0,
+  TIPXDCXMinerDisable: 0,
+  TIPXDCXReceiverDisable: 0,
   blackListedAddresses: ['0x0000000000000000000000000000000000000011'],
   masternodeVotingContract: '0x0000000000000000000000000000000000000088',
-  randomizeSMCBinary: '0x0000000000000000000000000000000000000090',
   blockSignerContract: '0x0000000000000000000000000000000000000089',
+  randomizeSMCBinary: '0x0000000000000000000000000000000000000090',
+  XDCXAddressBinary: '0x0000000000000000000000000000000000000091',
+  TradingStateAddressBinary: '0x0000000000000000000000000000000000000092',
+  XDCXLendingAddressBinary: '0x0000000000000000000000000000000000000093',
+  XDCXLendingFinalizedTradeAddressBinary: '0x0000000000000000000000000000000000000094',
 };
 
 /* ------------------------------------------------------------------ *
@@ -149,13 +158,22 @@ function translate(genesis, opts = {}) {
     switchBlock: v2.switchBlock ?? v2.SwitchBlock,
     v2Configs,
     mergeSignRange: DEFAULT_ENGINE.mergeSignRange,
+    RangeReturnSigner: DEFAULT_ENGINE.RangeReturnSigner,
     tip2019Block: DEFAULT_ENGINE.tip2019Block,
     DynamicGasLimitBlock: DEFAULT_ENGINE.DynamicGasLimitBlock,
+    TipXDCX: DEFAULT_ENGINE.TipXDCX,
     blackListHFNumber: DEFAULT_ENGINE.blackListHFNumber,
+    TipTrc21Fee: DEFAULT_ENGINE.TipTrc21Fee,
+    TIPXDCXMinerDisable: DEFAULT_ENGINE.TIPXDCXMinerDisable,
+    TIPXDCXReceiverDisable: DEFAULT_ENGINE.TIPXDCXReceiverDisable,
     blackListedAddresses: DEFAULT_ENGINE.blackListedAddresses,
     masternodeVotingContract: DEFAULT_ENGINE.masternodeVotingContract,
-    randomizeSMCBinary: DEFAULT_ENGINE.randomizeSMCBinary,
     blockSignerContract: DEFAULT_ENGINE.blockSignerContract,
+    randomizeSMCBinary: DEFAULT_ENGINE.randomizeSMCBinary,
+    XDCXAddressBinary: DEFAULT_ENGINE.XDCXAddressBinary,
+    TradingStateAddressBinary: DEFAULT_ENGINE.TradingStateAddressBinary,
+    XDCXLendingAddressBinary: DEFAULT_ENGINE.XDCXLendingAddressBinary,
+    XDCXLendingFinalizedTradeAddressBinary: DEFAULT_ENGINE.XDCXLendingFinalizedTradeAddressBinary,
   };
 
   // --- params (chain rules / EIP transitions) ---
