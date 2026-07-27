@@ -180,6 +180,33 @@ function generateXdpos(params) {
   command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
   console.log(command);
   const [result2, out2] = callExec(command);
+  if (!result2) {
+    return [result2, out2];
+  }
+
+  //step 3: convert genesis.json -> chainspec.json (needed by Nethermind nodes)
+  const nethermindCount =
+    "customversion-checkbox" in params &&
+    params["customversion-checkbox"] != ""
+      ? parseInt(params["customversion-xdpos-nethermind-count"]) || 0
+      : 0;
+  if (nethermindCount > 0) {
+    try {
+      const { translate } = require("./genesis-to-chainspec");
+      const genesis = JSON.parse(
+        fs.readFileSync(path.join(mountPath, "genesis.json"), "utf-8")
+      );
+      const chainspec = translate(genesis, {});
+      fs.writeFileSync(
+        path.join(mountPath, "chainspec.json"),
+        JSON.stringify(chainspec, null, 2) + "\n"
+      );
+      console.log("chainspec.json generated");
+    } catch (e) {
+      console.error("chainspec generation failed:", e.message);
+      return [false, `chainspec generation failed: ${e.message}`];
+    }
+  }
   return [result2, out2];
 }
 

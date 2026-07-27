@@ -62,9 +62,26 @@ doc["services"]["bootnode"] = {
 
 // checkpoint smartcontract deployment config
 doc, (ip_record = gen_compose.injectNetworkConfig(doc));
+
+// bootnode enode for bootnodes.list — set here so it is populated even when
+// every masternode runs Nethermind (and genXdposNodeConfig is never called).
+const bootnode_ip =
+  config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
+bootnode = `enode://cc566d1033f21c7eb0eb9f403bb651f3949b5f63b40683917765c343f9c0c596e9cd021e2e8416908cbc3ab7d6f6671a83c85f7b121c1872f8be50a591723a5d@${bootnode_ip}:20301\n`;
+
 subnetconf = [];
 for (let i = 1; i <= config.num_subnet; i++) {
-  subnetconf.push(genXdposNodeConfig(i, keys, ip_record));
+  if (isNethermindNode(i)) {
+    subnetconf.push({
+      filename: `masternode${i}nmc.env`,
+      content: genNethermindNodeConfig(i, keys, ip_record),
+    });
+  } else {
+    subnetconf.push({
+      filename: `masternode${i}.env`,
+      content: genXdposNodeConfig(i, keys, ip_record),
+    });
+  }
 }
 
 const compose_content = yaml.dump(doc, {});
@@ -123,8 +140,8 @@ function writeGenerated(output_dir) {
 
   for (let i = 1; i <= config.num_subnet; i++) {
     fs.writeFileSync(
-      `${output_dir}/masternode${i}.env`,
-      subnetconf[i - 1],
+      `${output_dir}/${subnetconf[i - 1].filename}`,
+      subnetconf[i - 1].content,
       (err) => {
         if (err) {
           console.error(err);
@@ -169,6 +186,14 @@ function copyScripts(output_dir) {
     `${__dirname}/scripts/docker-down.sh`,
     `${output_dir}/docker-down.sh`
   );
+  if (config.num_nethermind > 0) {
+    // shared Nethermind config mounted by every nmc node (chainspec.json is
+    // produced separately from genesis.json after puppeth runs)
+    fs.copyFileSync(
+      `${__dirname}/scripts/xdc-nmc.json`,
+      `${output_dir}/xdc-nmc.json`
+    );
+  }
 }
 
 function initConfig(config) {
@@ -339,9 +364,43 @@ GC_MODE=archive
 PORT=${port}
 RPC_PORT=${rpcport}
 WS_PORT=${wsport}
-LOG_LEVEL=2
+LOG_LEVEL=4
 `;
 
+  return config_env;
+}
+
+// The last `num_nethermind` masternodes run the Nethermind client instead of
+// the Go client. They stay validators and reuse the same key/port/IP slot.
+function isNethermindNode(subnet_id) {
+  return subnet_id > config.num_subnet - config.num_nethermind;
+}
+
+// Per-node env file (masternode<i>nmc.env) — Nethermind reads NETHERMIND_* env
+// vars (format NETHERMIND_<CATEGORY>CONFIG_<PROPERTY>). Shared/static settings
+// live in xdc-nmc.json; only per-node values are emitted here.
+function genNethermindNodeConfig(subnet_id, key, ip_record) {
+  const private_key = key[`key${subnet_id}`]["PrivateKey"]; // 0x-prefixed
+  const port = 20302 + subnet_id; // P2P + discovery
+  const rpcport = 8544 + subnet_id; // JSON-RPC
+  const ip = ip_record[`masternode${subnet_id}`];
+  const config_env = `
+NETHERMIND_JSONRPCCONFIG_ENABLED=true
+NETHERMIND_JSONRPCCONFIG_HOST=0.0.0.0
+NETHERMIND_JSONRPCCONFIG_PORT=${rpcport}
+NETHERMIND_NETWORKCONFIG_P2PPORT=${port}
+NETHERMIND_NETWORKCONFIG_DISCOVERYPORT=${port}
+NETHERMIND_NETWORKCONFIG_EXTERNALIP=${ip}
+NETHERMIND_NETWORKCONFIG_FILTERPEERSBYRECENTIP=false
+NETHERMIND_NETWORKCONFIG_BOOTNODES=${bootnode.trim()}
+NETHERMIND_INITCONFIG_DISCOVERYENABLED=true
+NETHERMIND_MININGCONFIG_ENABLED=true
+NETHERMIND_KEYSTORECONFIG_TESTNODEKEY=${private_key}
+NETHERMIND_HEALTHCHECKSCONFIG_ENABLED=true
+NETHERMIND_METRICSCONFIG_ENABLED=true
+NETHERMIND_METRICSCONFIG_EXPOSEPORT=8009
+NO_COLOR=1
+`;
   return config_env;
 }
 
@@ -355,26 +414,53 @@ function genXdposCompose(machine_id, num, start_num = 1) {
     const port = 20302 + i;
     const rpcport = 8544 + i;
     const wsport = 9554 + i;
+    const port_mappings = [
+      `${port}:${port}/tcp`,
+      `${port}:${port}/udp`,
+      `${rpcport}:${rpcport}/tcp`,
+      `${rpcport}:${rpcport}/udp`,
+      `${wsport}:${wsport}/tcp`,
+      `${wsport}:${wsport}/udp`,
+    ];
 
-    imageName = `${config.xdpos.xdposnode}`;
-    config_path = "masternode" + i.toString() + ".env";
-    
-    nodes[node_name] = {
-      image: imageName,
-      volumes: [volume, "./genesis.json:/work/genesis.json", "./bootnodes.list:/work/bootnodes.list"],
-      restart: "always",
-      network_mode: "host",
-      env_file: [config_path],
-      profiles: [compose_profile],
-      ports: [
-        `${port}:${port}/tcp`,
-        `${port}:${port}/udp`,
-        `${rpcport}:${rpcport}/tcp`,
-        `${rpcport}:${rpcport}/udp`,
-        `${wsport}:${wsport}/tcp`,
-        `${wsport}:${wsport}/udp`,
-      ],
-    };
+    if (isNethermindNode(i)) {
+      // Nethermind validator: config via masternode<i>nmc.env (NETHERMIND_*)
+      // + shared xdc-nmc.json; uses chainspec.json instead of genesis.json.
+      // injectNetworkConfig() adds the bridge networks/ipv4_address block.
+      nodes[node_name] = {
+        image: `${config.xdpos.nethermind}`,
+        volumes: [
+          volume,
+          "./chainspec.json:/work/chainspec.json",
+          "./xdc-nmc.json:/work/xdc-nmc.json",
+          "./bootnodes.list:/work/bootnodes.list",
+        ],
+        restart: "always",
+        env_file: [`masternode${i}nmc.env`],
+        command: [
+          "--config=/work/xdc-nmc.json",
+          "--datadir=/work/xdcchain",
+          "--log=debug",
+        ],
+        profiles: [compose_profile],
+        ports: port_mappings,
+      };
+    } else {
+      // Go XDPoS masternode (default).
+      nodes[node_name] = {
+        image: `${config.xdpos.xdposnode}`,
+        volumes: [
+          volume,
+          "./genesis.json:/work/genesis.json",
+          "./bootnodes.list:/work/bootnodes.list",
+        ],
+        restart: "always",
+        network_mode: "host",
+        env_file: [`masternode${i}.env`],
+        profiles: [compose_profile],
+        ports: port_mappings,
+      };
+    }
   }
   return nodes;
 }

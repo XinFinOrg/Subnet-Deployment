@@ -54,7 +54,7 @@ const path = require('path');
  * from genesis.json. Override here if the target network differs.
  * ------------------------------------------------------------------ */
 
-const DEFAULT_CHAIN_NAME = 'xdc-mine';
+const DEFAULT_CHAIN_NAME = 'xdpos-chain';
 
 // chainspec.genesis.baseFeePerGas is a concrete value while genesis.json has null.
 const DEFAULT_BASE_FEE_PER_GAS = '0x2e90edd00';
@@ -141,6 +141,12 @@ function translate(genesis, opts = {}) {
     .sort((a, b) => Number(a) - Number(b))
     .map((round) => {
       const { expTimeoutConfig, ...rest } = v2.allConfigs[round]; // drop expTimeoutConfig
+      // PLACEHOLDER: per-round reward amounts zeroed until XDC reward economics
+      // is finalized. Also avoids fractional puppeth defaults (e.g.
+      // protectorReward: 45.6) that Nethermind's UInt256 parser rejects.
+      rest.masternodeReward = 0;
+      rest.protectorReward = 0;
+      rest.observerReward = 0;
       return rest;
     });
 
