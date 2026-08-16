@@ -191,9 +191,13 @@ app.post("/submit_xdpos", (req, res) => {
       failed: true,
     });
   } else {
+    // a single machine deployment needs no profile argument
+    const upCommand =
+      parseInt(req.body["text-num-machine"]) > 1
+        ? "'./docker-up.sh machine1;'"
+        : "'./docker-up.sh;'";
     res.render("xdpos_generator/submit.pug", {
-      message:
-        "Config generation success, please continue with 'cd generated;' then './docker-up.sh machine1;'",
+      message: `Config generation success, please continue with 'cd generated;' then ${upCommand}`,
     });
     process.exit(0);
   }

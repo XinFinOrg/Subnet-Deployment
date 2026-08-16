@@ -2,18 +2,29 @@
 
 cd "$(dirname "$0")"
 
-if [[ -z $1 ]]; then
-  echo "Missing argument"
-  echo "Usage: docker-up.sh PROFILE"
-  echo "Profile:"
-  echo "  machine1, machine2, ... (as defined in docker-compose.yml)"
-  exit
+compose="docker-compose"
+if ! which docker-compose > /dev/null 2>&1; then
+  compose="docker compose"
 fi
 
-which docker-compose
-if [[ $? != 0 ]]; then
-    shopt -s expand_aliases
-    alias docker-compose='docker compose'
+profiles=($($compose config --profiles))
+
+profile="$1"
+if [[ -z $profile ]]; then
+  if [[ ${#profiles[@]} == 1 ]]; then
+    # single machine deployment, nothing to choose between
+    profile="${profiles[0]}"
+  else
+    echo "Missing argument"
+    echo "Usage: docker-up.sh PROFILE"
+    echo "Profile:"
+    if [[ ${#profiles[@]} == 0 ]]; then
+      echo "  no profile found in docker-compose.yml"
+    else
+      echo "  ${profiles[*]} (as defined in docker-compose.yml)"
+    fi
+    exit
+  fi
 fi
 
 network_name="docker_net"
@@ -41,6 +52,6 @@ elif [[ $check_result != 0 ]]; then
 fi
 
 
-docker-compose --profile $1 pull
-docker-compose --profile $1 up -d
+$compose --profile $profile pull
+$compose --profile $profile up -d
 
