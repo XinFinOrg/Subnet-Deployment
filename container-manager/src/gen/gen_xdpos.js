@@ -186,14 +186,13 @@ function copyScripts(output_dir) {
     `${__dirname}/scripts/docker-down.sh`,
     `${output_dir}/docker-down.sh`
   );
-  if (config.num_nethermind > 0) {
-    // shared Nethermind config mounted by every nmc node (chainspec.json is
-    // produced separately from genesis.json after puppeth runs)
-    fs.copyFileSync(
-      `${__dirname}/scripts/xdc-nmc.json`,
-      `${output_dir}/xdc-nmc.json`
-    );
-  }
+  // shared Nethermind config mounted by every nmc node, copied unconditionally
+  // so it is always available (chainspec.json is produced separately from
+  // genesis.json after puppeth runs)
+  fs.copyFileSync(
+    `${__dirname}/scripts/xdc-nmc.json`,
+    `${output_dir}/xdc-nmc.json`
+  );
 }
 
 function initConfig(config) {

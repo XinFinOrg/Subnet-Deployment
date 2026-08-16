@@ -6,11 +6,18 @@
  * Erigon style `chainspec.json` consumed by this network.
  *
  * Usage:
- *   node genesis-to-chainspec.js <genesis.json> [chainspec.json] [--name <chain-name>]
+ *   node genesis-to-chainspec.js <genesis.json> <chainspec.json> [--name <chain-name>]
  *
  *   node genesis-to-chainspec.js ../genesis.json ../chainspec.json --name xdc-mine
  *
- * If the output path is omitted the result is printed to stdout.
+ * Both the input and the output path are required; there are no defaults.
+ *
+ * From the host, as a one-off container (paths are container paths;
+ * /mount/generated is the host's ./generated directory):
+ *
+ *   docker run --rm -v $PWD/generated:/mount/generated \
+ *     xinfinorg/subnet-generator:<version> \
+ *     npm run convert -- /mount/generated/genesis.json /mount/generated/chainspec.json
  *
  * Self-contained: no external dependencies.
  *
@@ -256,6 +263,13 @@ function translate(genesis, opts = {}) {
  * CLI
  * ------------------------------------------------------------------ */
 
+const USAGE =
+  'Usage: node genesis-to-chainspec.js <genesis.json> <chainspec.json> [--name <name>] [--base-fee <0x..>]\n' +
+  '       npm run convert -- <genesis.json> <chainspec.json> [--name <name>] [--base-fee <0x..>]\n' +
+  'Both paths are required. Relative paths resolve against the current working\n' +
+  'directory (/app when invoked through npm inside the container), so prefer\n' +
+  'absolute paths such as /mount/generated/genesis.json.';
+
 function main(argv) {
   const args = argv.slice(2);
   const positional = [];
@@ -266,32 +280,49 @@ function main(argv) {
     } else if (args[i] === '--base-fee') {
       opts.baseFeePerGas = args[++i];
     } else if (args[i] === '-h' || args[i] === '--help') {
-      console.log('Usage: node genesis-to-chainspec.js <genesis.json> [chainspec.json] [--name <name>] [--base-fee <0x..>]');
+      console.log(USAGE);
       return 0;
     } else {
       positional.push(args[i]);
     }
   }
 
-  if (positional.length < 1) {
-    console.error('Error: missing input genesis.json path.');
-    console.error('Usage: node genesis-to-chainspec.js <genesis.json> [chainspec.json] [--name <name>]');
+  if (positional.length < 2) {
+    console.error(
+      positional.length === 0
+        ? 'Error: missing input genesis.json and output chainspec.json paths.'
+        : 'Error: missing output chainspec.json path.'
+    );
+    console.error(USAGE);
+    return 1;
+  }
+  if (positional.length > 2) {
+    console.error(`Error: unexpected extra argument "${positional[2]}".`);
+    console.error(USAGE);
     return 1;
   }
 
   const inPath = path.resolve(positional[0]);
-  const outPath = positional[1] ? path.resolve(positional[1]) : null;
+  const outPath = path.resolve(positional[1]);
 
-  const genesis = JSON.parse(fs.readFileSync(inPath, 'utf8'));
+  let genesis;
+  try {
+    genesis = JSON.parse(fs.readFileSync(inPath, 'utf8'));
+  } catch (e) {
+    console.error(`Error: cannot read genesis from ${inPath}: ${e.message}`);
+    return 1;
+  }
+
   const chainspec = translate(genesis, opts);
   const json = JSON.stringify(chainspec, null, 2) + '\n';
 
-  if (outPath) {
+  try {
     fs.writeFileSync(outPath, json);
-    console.error(`Wrote ${outPath} (${chainspec.params.chainId ? 'chainId ' + chainspec.params.chainId : ''}).`);
-  } else {
-    process.stdout.write(json);
+  } catch (e) {
+    console.error(`Error: cannot write chainspec to ${outPath}: ${e.message}`);
+    return 1;
   }
+  console.error(`Wrote ${outPath} (${chainspec.params.chainId ? 'chainId ' + chainspec.params.chainId : ''}).`);
   return 0;
 }
 
