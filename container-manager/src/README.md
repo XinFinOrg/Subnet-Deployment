@@ -38,9 +38,11 @@ chainspec gives the Nethermind nodes a different config than the XDC nodes.
 
 On a difference it lists the offending keys, moves the old file to
 `archive/chainspec.<UTC timestamp>.json`, and writes the chainspec that
-`genesis.json` translates to. Exit codes: `0` already matched, `1` differed,
-`2` error. `docker-up.sh` stops on anything but `0`, so a repaired chainspec
-leaves you free to wipe node data directories before running it again.
+`genesis.json` translates to. Exit codes: `0` already matched, `3` differed,
+`2` error — `3` rather than `1`, since the check runs in a container and node
+exits `1` when it crashes. `docker-up.sh` stops on anything but `0`, so a
+repaired chainspec leaves you free to wipe node data directories before running
+it again.
 
 The check runs in a throwaway subnet-generator container, which already carries
 the converter — the host needs docker only, no node. The image is the one that

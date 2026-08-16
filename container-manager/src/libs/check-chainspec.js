@@ -20,9 +20,13 @@
  *
  * Exit codes:
  *   0  chainspec.json already matches genesis.json, nothing was touched
- *   1  they differed (differences are listed, and the chainspec was replaced
+ *   3  they differed (differences are listed, and the chainspec was replaced
  *      unless --dry-run) — worth a look before booting
  *   2  a file is missing / unreadable / not valid JSON, or the replace failed
+ *
+ * 3 rather than 1 for "differed": this usually runs inside a container, where
+ * 1 is also what node exits with when it crashes, so a caller could not tell a
+ * replaced chainspec from a broken run.
  */
 
 'use strict';
@@ -31,6 +35,7 @@ const fs = require('fs');
 const path = require('path');
 const { translate } = require('./genesis-to-chainspec');
 
+const EXIT_DIFFERED = 3;
 const MAX_REPORTED = 20;
 const MAX_VALUE_LEN = 60;
 
@@ -160,7 +165,7 @@ const USAGE =
   'Usage: node check-chainspec.js <genesis.json> <chainspec.json> [--dry-run] [--name <name>] [--base-fee <0x..>]\n' +
   'Both paths are required. A differing chainspec is archived and replaced,\n' +
   'unless --dry-run is given.\n' +
-  'Exit code: 0 already matched, 1 differed, 2 error.';
+  'Exit code: 0 already matched, 3 differed, 2 error.';
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -255,7 +260,7 @@ function main(argv) {
 
   if (dryRun) {
     console.log('--dry-run: nothing was changed. Drop the flag to archive and replace it.');
-    return 1;
+    return EXIT_DIFFERED;
   }
 
   let backup;
@@ -271,7 +276,7 @@ function main(argv) {
     'Nodes that already ran on the old chainspec keep chain data built from it; ' +
       'wipe their data directories before booting if the genesis block changed.'
   );
-  return 1;
+  return EXIT_DIFFERED;
 }
 
 if (require.main === module) {

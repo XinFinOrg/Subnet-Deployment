@@ -11,7 +11,7 @@
 #   paths are relative to the deployment folder (the parent of this script)
 #   --dry-run reports the differences without changing any file
 #
-# Exit code: 0 already matched, 1 differed, 2 error.
+# Exit code: 0 already matched, 3 differed, 2 error.
 #
 # The check runs in a throwaway subnet-generator container, which carries the
 # converter; the host needs docker only. The image defaults to the generator
@@ -54,3 +54,15 @@ fi
 # -u keeps the archived and rewritten files owned by the invoking user
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/data" -w /data "$GENERATOR_IMAGE_VERSION" \
   node /app/libs/check-chainspec.js "$genesis" "$chainspec" "$@"
+result=$?
+
+# only 0, 2 and 3 come from the check itself; anything else is docker or node
+# failing before it could compare, and must not be read as a result
+if [[ $result != 0 && $result != 2 && $result != 3 ]]; then
+  echo ""
+  echo "Error: the check did not run (exit $result)."
+  echo "$GENERATOR_IMAGE_VERSION may predate it — the image needs /app/libs/check-chainspec.js."
+  echo "Set GENERATOR_IMAGE_VERSION to a newer subnet-generator image."
+  exit 2
+fi
+exit $result

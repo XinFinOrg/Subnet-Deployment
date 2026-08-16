@@ -29,7 +29,7 @@ fi
 # Nethermind nodes boot on a different config than the XDC nodes.
 bash scripts/check-chainspec.sh
 check_result=$?
-if [[ $check_result == 1 ]]; then
+if [[ $check_result == 3 ]]; then
   echo ""
   echo "chainspec.json was updated and the old copy saved as backup in archive directory."
   exit 1
