@@ -357,6 +357,24 @@ RELAYER_MODE=${relayer_mode}
   return content;
 }
 
+// This manager runs inside the subnet-generator image, so ask docker which
+// image that is: recorded in gen.env, it lets the deployment run the pre-boot
+// chainspec check with the exact version that generated it. Falls back to the
+// configured image name when not running in a container (npm run dev).
+function getGeneratorImage() {
+  try {
+    const image = execSync(`docker inspect --format '{{.Config.Image}}' $(hostname)`, {
+      encoding: "utf-8",
+    }).trim();
+    if (image) {
+      return image;
+    }
+  } catch (e) {
+    console.error("cannot detect the generator image:", e.message);
+  }
+  return require("../gen/config_gen.js").config.docker_image_name;
+}
+
 function genGenXdposEnv(input){
   console.log(input);
   let content_machine = "";
@@ -401,6 +419,7 @@ function genGenXdposEnv(input){
   if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-nethermind-version" in input && input["customversion-xdpos-nethermind-version"] != "") {
     content_version += `\nVERSION_NETHERMIND_IMAGE=${input["customversion-xdpos-nethermind-version"]}`;
   }
+  content_version += `\nGENERATOR_IMAGE_VERSION=${getGeneratorImage()}`;
 
 
 

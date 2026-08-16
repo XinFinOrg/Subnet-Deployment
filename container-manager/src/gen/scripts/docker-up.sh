@@ -27,7 +27,7 @@ fi
 
 # pre-check: chainspec.json must still match genesis.json, otherwise the
 # Nethermind nodes boot on a different config than the XDC nodes.
-bash check-chainspec.sh
+bash scripts/check-chainspec.sh
 check_result=$?
 if [[ $check_result == 1 ]]; then
   echo ""

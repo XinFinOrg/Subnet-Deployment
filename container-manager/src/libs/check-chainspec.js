@@ -166,6 +166,14 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+// Report paths relative to the working directory when they sit under it. The
+// check usually runs in a container with the deployment folder bind-mounted, so
+// absolute paths would be the container's, not the ones the operator knows.
+function display(filePath) {
+  const rel = path.relative(process.cwd(), filePath);
+  return rel && !rel.startsWith('..') ? rel : filePath;
+}
+
 function main(argv) {
   const args = argv.slice(2);
   const positional = [];
@@ -204,13 +212,13 @@ function main(argv) {
   try {
     genesis = readJson(genesisPath);
   } catch (e) {
-    console.error(`Error: cannot read genesis from ${genesisPath}: ${e.message}`);
+    console.error(`Error: cannot read genesis from ${display(genesisPath)}: ${e.message}`);
     return 2;
   }
   try {
     chainspec = readJson(chainspecPath);
   } catch (e) {
-    console.error(`Error: cannot read chainspec from ${chainspecPath}: ${e.message}`);
+    console.error(`Error: cannot read chainspec from ${display(chainspecPath)}: ${e.message}`);
     return 2;
   }
 
@@ -219,20 +227,20 @@ function main(argv) {
   try {
     ({ expected, diffs } = compare(genesis, chainspec, opts));
   } catch (e) {
-    console.error(`Error: cannot translate ${genesisPath}: ${e.message}`);
+    console.error(`Error: cannot translate ${display(genesisPath)}: ${e.message}`);
     return 2;
   }
 
   if (diffs.length === 0) {
     console.log(
-      `OK: ${chainspecPath} matches ${genesisPath}` +
+      `OK: ${display(chainspecPath)} matches ${display(genesisPath)}` +
         (chainspec.params && chainspec.params.chainId ? ` (chainId ${chainspec.params.chainId})` : '')
     );
     return 0;
   }
 
   console.log(
-    `MISMATCH: ${chainspecPath} does not match ${genesisPath} ` +
+    `MISMATCH: ${display(chainspecPath)} does not match ${display(genesisPath)} ` +
       `(${diffs.length} difference${diffs.length === 1 ? '' : 's'})`
   );
   for (const d of diffs.slice(0, MAX_REPORTED)) {
@@ -254,11 +262,11 @@ function main(argv) {
   try {
     backup = replaceChainspec(chainspecPath, expected, new Date());
   } catch (e) {
-    console.error(`Error: cannot replace ${chainspecPath}: ${e.message}`);
+    console.error(`Error: cannot replace ${display(chainspecPath)}: ${e.message}`);
     return 2;
   }
-  console.log(`Archived the old chainspec to ${backup}`);
-  console.log(`Replaced ${chainspecPath} with the one generated from ${genesisPath}`);
+  console.log(`Archived the old chainspec to ${display(backup)}`);
+  console.log(`Replaced ${display(chainspecPath)} with the one generated from ${display(genesisPath)}`);
   console.log(
     'Nodes that already ran on the old chainspec keep chain data built from it; ' +
       'wipe their data directories before booting if the genesis block changed.'

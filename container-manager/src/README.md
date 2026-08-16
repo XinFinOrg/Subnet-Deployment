@@ -26,25 +26,26 @@ inside the container is `./generated` on the host; relative paths resolve agains
 
 ## Pre-boot check
 
-`check-chainspec.sh` ships in every generated deployment folder, next to
-`docker-up.sh`. Run it before booting: it re-translates `genesis.json` and
-compares the result with `chainspec.json`, since a stale chainspec gives the
-Nethermind nodes a different genesis block than the XDC nodes.
+`scripts/check-chainspec.sh` ships in every generated deployment folder, and
+`docker-up.sh` runs it before starting any container: it re-translates
+`genesis.json` and compares the result with `chainspec.json`, since a stale
+chainspec gives the Nethermind nodes a different config than the XDC nodes.
 
 ```bash
-./check-chainspec.sh              # check, and repair if they differ
-./check-chainspec.sh --dry-run    # report only
+./scripts/check-chainspec.sh              # check, and repair if they differ
+./scripts/check-chainspec.sh --dry-run    # report only
 ```
 
 On a difference it lists the offending keys, moves the old file to
 `archive/chainspec.<UTC timestamp>.json`, and writes the chainspec that
 `genesis.json` translates to. Exit codes: `0` already matched, `1` differed,
-`2` error — so `./check-chainspec.sh && ./docker-up.sh machine1` stops after a
-repair and lets you decide whether node data directories need wiping.
+`2` error. `docker-up.sh` stops on anything but `0`, so a repaired chainspec
+leaves you free to wipe node data directories before running it again.
 
-It runs on the host's `node` if there is one, otherwise inside a throwaway
-`node:24-alpine` container (`CHECK_IMAGE` overrides the image). The check itself
-is `scripts/check-chainspec.js`, copied into the deployment folder at generation
-time along with `scripts/genesis-to-chainspec.js`, so it needs neither this
-container nor a network. Inside the container manager the same check is
-`npm run check-chainspec -- <genesis.json> <chainspec.json>`.
+The check runs in a throwaway subnet-generator container, which already carries
+the converter — the host needs docker only, no node. The image is the one that
+generated the deployment: the manager inspects its own container during genesis
+generation and records it in `gen.env` as `GENERATOR_IMAGE_VERSION`, so the
+check always uses the converter version the chainspec was built with. Export
+`GENERATOR_IMAGE_VERSION` to override it. Inside the container manager the same
+check is `npm run check-chainspec -- <genesis.json> <chainspec.json>`.
