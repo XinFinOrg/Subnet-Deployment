@@ -25,6 +25,21 @@ else
 fi
 
 
+# pre-check: chainspec.json must still match genesis.json, otherwise the
+# Nethermind nodes boot on a different config than the XDC nodes.
+bash check-chainspec.sh
+check_result=$?
+if [[ $check_result == 1 ]]; then
+  echo ""
+  echo "chainspec.json was updated and the old copy saved as backup in archive directory."
+  exit 1
+elif [[ $check_result != 0 ]]; then
+  echo ""
+  echo "chainspec pre-check failed, not booting."
+  exit $check_result
+fi
+
+
 docker-compose --profile $1 pull
 docker-compose --profile $1 up -d
 

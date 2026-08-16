@@ -193,6 +193,20 @@ function copyScripts(output_dir) {
     `${__dirname}/scripts/xdc-nmc.json`,
     `${output_dir}/xdc-nmc.json`
   );
+  // pre-boot check that chainspec.json still matches genesis.json; the two js
+  // files are the check itself, shipped so it runs without this container
+  fs.copyFileSync(
+    `${__dirname}/scripts/check-chainspec.sh`,
+    `${output_dir}/check-chainspec.sh`
+  );
+  fs.copyFileSync(
+    `${__dirname}/../libs/check-chainspec.js`,
+    `${output_dir}/scripts/check-chainspec.js`
+  );
+  fs.copyFileSync(
+    `${__dirname}/../libs/genesis-to-chainspec.js`,
+    `${output_dir}/scripts/genesis-to-chainspec.js`
+  );
 }
 
 function initConfig(config) {
