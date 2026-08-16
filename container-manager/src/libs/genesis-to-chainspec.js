@@ -22,15 +22,20 @@
  * Self-contained: no external dependencies.
  *
  * --------------------------------------------------------------------------
- * Mapping summary (see README at bottom of file for the full diff rationale):
+ * Every chainspec value that genesis.json can supply is read from it. The
+ * DEFAULT_* tables below are fallbacks only: they apply when genesis says
+ * nothing about a field.
  *
  *   genesis.config.chainId          -> params.chainId
  *   genesis.config.homesteadBlock   -> params.homesteadBlock
  *   genesis.config.eip150Block      -> params.eip150Transition
  *   genesis.config.eip155Block      -> params.eip155Transition
- *   genesis.config.eip158Block      -> params.eip158Transition
+ *   genesis.config.eip158Block      -> params.eip158Transition, eip160Transition
  *   genesis.config.byzantiumBlock   -> params.byzantiumBlock
- *   (all remaining EIP transitions come from DEFAULT_PARAMS)
+ *   the remaining EIP transitions come from the hardfork that ships them, see
+ *   TRANSITION_FORKS: constantinopleBlock, istanbulBlock, berlinBlock,
+ *   londonBlock (eip1559Block wins for eip1559Transition), mergeBlock,
+ *   shanghaiBlock, cancunBlock
  *
  *   genesis.config.XDPoS.period             -> engine.XDPoS.params.period
  *   genesis.config.XDPoS.epoch              -> engine.XDPoS.params.epoch
@@ -40,14 +45,32 @@
  *   genesis.config.XDPoS.foudationWalletAddr-> engine.XDPoS.params.foundationWalletAddr (typo fixed, lowercased)
  *   genesis.config.XDPoS.v2.switchEpoch     -> engine.XDPoS.params.switchEpoch (also accepts "SwitchEpoch")
  *   genesis.config.XDPoS.v2.switchBlock     -> engine.XDPoS.params.switchBlock (also accepts "SwitchBlock")
- *   genesis.config.XDPoS.v2.allConfigs.*    -> engine.XDPoS.params.v2Configs[] (expTimeoutConfig dropped)
- *   (the engine constants — contract addresses, mergeSignRange, blacklist, etc. — come from DEFAULT_ENGINE)
+ *   genesis.config.XDPoS.v2.allConfigs.*    -> engine.XDPoS.params.v2Configs[]
+ *     (TODO: the masternode/protector/observer reward amounts are zeroed, not
+ *      carried — see translate())
+ *   genesis.config.tip2019Block                -> engine.XDPoS.params.tip2019Block
+ *   genesis.config.dynamicGasLimitBlock        -> engine.XDPoS.params.DynamicGasLimitBlock
+ *   genesis.config.tipXDCXBlock                -> engine.XDPoS.params.TipXDCX
+ *   genesis.config.denylistBlock               -> engine.XDPoS.params.blackListHFNumber
+ *   genesis.config.tipTRC21FeeBlock            -> engine.XDPoS.params.TipTrc21Fee
+ *   genesis.config.tipXDCXMinerDisableBlock    -> engine.XDPoS.params.TIPXDCXMinerDisable
+ *   genesis.config.tipXDCXReceiverDisableBlock -> engine.XDPoS.params.TIPXDCXReceiverDisable
  *
  *   genesis.{nonce,timestamp,extraData,gasLimit,difficulty,mixHash,
  *            coinbase,number,gasUsed,parentHash}  -> genesis.* (verbatim)
  *   genesis.baseFeePerGas (null)                  -> genesis.baseFeePerGas (DEFAULT_BASE_FEE_PER_GAS)
  *
  *   genesis.alloc  -> accounts (verbatim: code / storage / balance)
+ *
+ * Not derivable from genesis, so always DEFAULT_ENGINE / DEFAULT_PARAMS:
+ *   mergeSignRange, RangeReturnSigner, blackListedAddresses, the contract
+ *   binaries (they live in XDC's common constants, not in genesis), and
+ *   eip1559ElasticityMultiplier.
+ *
+ * Present in genesis but with no counterpart in the chainspec schema, so
+ * dropped rather than invented: v2 expTimeoutConfig, maxMasternodesV2,
+ * SkipV1Validation, pragueBlock/osakaBlock, and the trc21IssuerSMC /
+ * xdcxListingSMC / relayerRegistrationSMC / lendingRegistrationSMC addresses.
  * --------------------------------------------------------------------------
  */
 
@@ -124,6 +147,59 @@ const DEFAULT_ENGINE = {
   XDCXLendingFinalizedTradeAddressBinary: '0x0000000000000000000000000000000000000094',
 };
 
+// Which hardfork block in genesis.config activates each chainspec transition.
+// The EIPs of a fork all switch on at that fork's block; when genesis does not
+// mention the fork, the DEFAULT_PARAMS entry stands in. Order matters: it is
+// the key order of the generated params object.
+const TRANSITION_FORKS = {
+  eip160Transition: 'eip158Block', // Spurious Dragon, same block as EIP-158
+  eip145Transition: 'constantinopleBlock',
+  eip1014Transition: 'constantinopleBlock',
+  eip1052Transition: 'constantinopleBlock',
+  eip1234Transition: 'constantinopleBlock',
+  eip1283Transition: 'constantinopleBlock',
+  eip152Transition: 'istanbulBlock',
+  eip1108Transition: 'istanbulBlock',
+  eip1344Transition: 'istanbulBlock',
+  eip1884Transition: 'istanbulBlock',
+  eip2028Transition: 'istanbulBlock',
+  eip2200Transition: 'istanbulBlock',
+  eip2565Transition: 'berlinBlock',
+  eip2718Transition: 'berlinBlock',
+  eip2930Transition: 'berlinBlock',
+  eip1559Transition: 'londonBlock', // eip1559Block takes precedence, see below
+  eip2929Transition: 'berlinBlock',
+  eip3198Transition: 'londonBlock',
+  eip3529Transition: 'londonBlock',
+  eip3541Transition: 'londonBlock',
+  eip3554Transition: 'londonBlock',
+  eip4399Transition: 'mergeBlock',
+  eip3651Transition: 'shanghaiBlock',
+  eip3855Transition: 'shanghaiBlock',
+  eip3860Transition: 'shanghaiBlock',
+  eip6049Transition: 'shanghaiBlock',
+  eip1153Transition: 'cancunBlock',
+  eip4844Transition: 'cancunBlock',
+  eip5656Transition: 'cancunBlock',
+  eip6780Transition: 'cancunBlock',
+  eip7516Transition: 'cancunBlock',
+};
+
+/* ------------------------------------------------------------------ *
+ * Value selection
+ * ------------------------------------------------------------------ */
+
+// First value genesis actually states wins; a default is only reached when
+// every candidate is absent. Not `||` — 0 and false are real values here.
+function pick(...candidates) {
+  for (const candidate of candidates) {
+    if (candidate !== undefined && candidate !== null) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
 /* ------------------------------------------------------------------ *
  * Address normalization
  * ------------------------------------------------------------------ */
@@ -144,12 +220,15 @@ function translate(genesis, opts = {}) {
   const v2 = xdpos.v2 || {};
 
   // --- engine.XDPoS.params ---
+  // Every per-round field is carried through as genesis states it, with two
+  // exceptions: expTimeoutConfig, which the chainspec schema has no key for and
+  // so is dropped rather than invented, and the reward amounts below.
   const v2Configs = Object.keys(v2.allConfigs || {})
     .sort((a, b) => Number(a) - Number(b))
     .map((round) => {
-      const { expTimeoutConfig, ...rest } = v2.allConfigs[round]; // drop expTimeoutConfig
-      // PLACEHOLDER: per-round reward amounts zeroed until XDC reward economics
-      // is finalized. Also avoids fractional puppeth defaults (e.g.
+      const { expTimeoutConfig, ...rest } = v2.allConfigs[round];
+      // TODO: carry the genesis reward amounts once XDC reward economics is
+      // finalized. Zeroed for now: puppeth writes fractional defaults (e.g.
       // protectorReward: 45.6) that Nethermind's UInt256 parser rejects.
       rest.masternodeReward = 0;
       rest.protectorReward = 0;
@@ -170,15 +249,20 @@ function translate(genesis, opts = {}) {
     switchEpoch: v2.switchEpoch ?? v2.SwitchEpoch,
     switchBlock: v2.switchBlock ?? v2.SwitchBlock,
     v2Configs,
+    // no genesis counterpart: node-level constants, not chain data
     mergeSignRange: DEFAULT_ENGINE.mergeSignRange,
     RangeReturnSigner: DEFAULT_ENGINE.RangeReturnSigner,
-    tip2019Block: DEFAULT_ENGINE.tip2019Block,
-    DynamicGasLimitBlock: DEFAULT_ENGINE.DynamicGasLimitBlock,
-    TipXDCX: DEFAULT_ENGINE.TipXDCX,
-    blackListHFNumber: DEFAULT_ENGINE.blackListHFNumber,
-    TipTrc21Fee: DEFAULT_ENGINE.TipTrc21Fee,
-    TIPXDCXMinerDisable: DEFAULT_ENGINE.TIPXDCXMinerDisable,
-    TIPXDCXReceiverDisable: DEFAULT_ENGINE.TIPXDCXReceiverDisable,
+    // XDC hardfork blocks, named differently on each side
+    tip2019Block: pick(cfg.tip2019Block, DEFAULT_ENGINE.tip2019Block),
+    DynamicGasLimitBlock: pick(cfg.dynamicGasLimitBlock, DEFAULT_ENGINE.DynamicGasLimitBlock),
+    TipXDCX: pick(cfg.tipXDCXBlock, DEFAULT_ENGINE.TipXDCX),
+    blackListHFNumber: pick(cfg.denylistBlock, DEFAULT_ENGINE.blackListHFNumber),
+    TipTrc21Fee: pick(cfg.tipTRC21FeeBlock, DEFAULT_ENGINE.TipTrc21Fee),
+    TIPXDCXMinerDisable: pick(cfg.tipXDCXMinerDisableBlock, DEFAULT_ENGINE.TIPXDCXMinerDisable),
+    TIPXDCXReceiverDisable: pick(
+      cfg.tipXDCXReceiverDisableBlock,
+      DEFAULT_ENGINE.TIPXDCXReceiverDisable
+    ),
     blackListedAddresses: DEFAULT_ENGINE.blackListedAddresses,
     masternodeVotingContract: DEFAULT_ENGINE.masternodeVotingContract,
     blockSignerContract: DEFAULT_ENGINE.blockSignerContract,
@@ -196,40 +280,19 @@ function translate(genesis, opts = {}) {
     eip150Transition: cfg.eip150Block,
     eip155Transition: cfg.eip155Block,
     eip158Transition: cfg.eip158Block,
-    eip160Transition: DEFAULT_PARAMS.eip160Transition,
-    eip145Transition: DEFAULT_PARAMS.eip145Transition,
-    eip1014Transition: DEFAULT_PARAMS.eip1014Transition,
-    eip1052Transition: DEFAULT_PARAMS.eip1052Transition,
-    eip1234Transition: DEFAULT_PARAMS.eip1234Transition,
-    eip1283Transition: DEFAULT_PARAMS.eip1283Transition,
-    eip152Transition: DEFAULT_PARAMS.eip152Transition,
-    eip1108Transition: DEFAULT_PARAMS.eip1108Transition,
-    eip1344Transition: DEFAULT_PARAMS.eip1344Transition,
-    eip1884Transition: DEFAULT_PARAMS.eip1884Transition,
-    eip2028Transition: DEFAULT_PARAMS.eip2028Transition,
-    eip2200Transition: DEFAULT_PARAMS.eip2200Transition,
-    eip2565Transition: DEFAULT_PARAMS.eip2565Transition,
-    eip2718Transition: DEFAULT_PARAMS.eip2718Transition,
-    eip2930Transition: DEFAULT_PARAMS.eip2930Transition,
-    eip1559Transition: DEFAULT_PARAMS.eip1559Transition,
-    eip2929Transition: DEFAULT_PARAMS.eip2929Transition,
-    eip3198Transition: DEFAULT_PARAMS.eip3198Transition,
-    eip3529Transition: DEFAULT_PARAMS.eip3529Transition,
-    eip3541Transition: DEFAULT_PARAMS.eip3541Transition,
-    eip3554Transition: DEFAULT_PARAMS.eip3554Transition,
-    eip4399Transition: DEFAULT_PARAMS.eip4399Transition,
-    eip3651Transition: DEFAULT_PARAMS.eip3651Transition,
-    eip3855Transition: DEFAULT_PARAMS.eip3855Transition,
-    eip3860Transition: DEFAULT_PARAMS.eip3860Transition,
-    eip6049Transition: DEFAULT_PARAMS.eip6049Transition,
-    eip1153Transition: DEFAULT_PARAMS.eip1153Transition,
-    eip4844Transition: DEFAULT_PARAMS.eip4844Transition,
-    eip5656Transition: DEFAULT_PARAMS.eip5656Transition,
-    eip6780Transition: DEFAULT_PARAMS.eip6780Transition,
-    eip7516Transition: DEFAULT_PARAMS.eip7516Transition,
-    byzantiumBlock: cfg.byzantiumBlock,
-    eip1559ElasticityMultiplier: DEFAULT_PARAMS.eip1559ElasticityMultiplier,
   };
+  for (const [key, forkBlock] of Object.entries(TRANSITION_FORKS)) {
+    params[key] = pick(cfg[forkBlock], DEFAULT_PARAMS[key]);
+  }
+  // genesis states EIP-1559 on its own key as well as through londonBlock
+  params.eip1559Transition = pick(
+    cfg.eip1559Block,
+    cfg.londonBlock,
+    DEFAULT_PARAMS.eip1559Transition
+  );
+  params.byzantiumBlock = cfg.byzantiumBlock;
+  // no genesis counterpart
+  params.eip1559ElasticityMultiplier = DEFAULT_PARAMS.eip1559ElasticityMultiplier;
 
   // --- genesis block header ---
   const block = {

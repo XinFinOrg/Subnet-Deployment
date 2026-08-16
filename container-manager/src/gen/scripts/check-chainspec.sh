@@ -62,7 +62,9 @@ if [[ $result != 0 && $result != 2 && $result != 3 ]]; then
   echo ""
   echo "Error: the check did not run (exit $result)."
   echo "$GENERATOR_IMAGE_VERSION may predate it — the image needs /app/libs/check-chainspec.js."
-  echo "Set GENERATOR_IMAGE_VERSION to a newer subnet-generator image."
+  echo "A local copy of that tag can be outdated, docker will not re-pull it. Try:"
+  echo "  docker pull $GENERATOR_IMAGE_VERSION"
+  echo "Or set GENERATOR_IMAGE_VERSION to a newer subnet-generator image."
   exit 2
 fi
 exit $result
