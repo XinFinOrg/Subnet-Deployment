@@ -171,6 +171,7 @@ app.post("/submit", (req, res) => {
     res.render("generator/submit.pug", {
       message: "failed, please try again",
       error: genOut,
+      failed: true,
     });
   } else {
     res.render("generator/submit.pug", {
@@ -187,6 +188,7 @@ app.post("/submit_xdpos", (req, res) => {
     res.render("xdpos_generator/submit.pug", {
       message: "failed, please try again",
       error: genOut,
+      failed: true,
     });
   } else {
     res.render("xdpos_generator/submit.pug", {
