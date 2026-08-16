@@ -32,6 +32,7 @@ check_result=$?
 if [[ $check_result == 3 ]]; then
   echo ""
   echo "chainspec.json was updated and the old copy saved as backup in archive directory."
+  echo "Run the previous command again to start the chain!"
   exit 1
 elif [[ $check_result != 0 ]]; then
   echo ""
