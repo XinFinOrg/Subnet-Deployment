@@ -51,6 +51,10 @@ if [[ ! -f "$chainspec" ]]; then
   exit 2
 fi
 
+# a local copy of the tag can be outdated and docker will not re-pull it on
+# its own; if the pull fails, fall through and use whatever is local
+docker pull "$GENERATOR_IMAGE_VERSION"
+
 # -u keeps the archived and rewritten files owned by the invoking user
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/data" -w /data "$GENERATOR_IMAGE_VERSION" \
   node /app/libs/check-chainspec.js "$genesis" "$chainspec" "$@"
@@ -59,12 +63,6 @@ result=$?
 # only 0, 2 and 3 come from the check itself; anything else is docker or node
 # failing before it could compare, and must not be read as a result
 if [[ $result != 0 && $result != 2 && $result != 3 ]]; then
-  echo ""
-  echo "Error: the check did not run (exit $result)."
-  echo "$GENERATOR_IMAGE_VERSION may predate it — the image needs /app/libs/check-chainspec.js."
-  echo "A local copy of that tag can be outdated, docker will not re-pull it. Try:"
-  echo "  docker pull $GENERATOR_IMAGE_VERSION"
-  echo "Or set GENERATOR_IMAGE_VERSION to a newer subnet-generator image."
   exit 2
 fi
 exit $result
