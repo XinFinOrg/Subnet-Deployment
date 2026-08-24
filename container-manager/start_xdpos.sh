@@ -1,9 +1,9 @@
 #!/bin/bash
-version="${GENERATOR_VERSION:-generator-v3.0.0}"
+image_version="${GENERATOR_IMAGE_VERSION:-xinfinorg/subnet-generator:generator-v3.0.0}"
 current_dir="$(cd "$(dirname "$0")" && pwd)"
 network_name="docker_net"
 
-docker pull xinfinorg/subnet-generator:$version
+docker pull $image_version
 # Check the exit code
 if [ $? -eq 0 ]; then
     echo "SUCCESS: Docker pull completed successfully"
@@ -28,7 +28,7 @@ docker run -d                                   \
   -v $current_dir/generated:/mount/generated    \
   -e HOSTPWD=$current_dir/generated             \
   -e NON_SUBNET=true                            \
-  xinfinorg/subnet-generator:$version           \
+  $image_version                                \
   && \
 echo '' && \
 echo '' && \

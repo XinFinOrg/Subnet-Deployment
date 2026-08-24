@@ -227,12 +227,7 @@ function translate(genesis, opts = {}) {
     .sort((a, b) => Number(a) - Number(b))
     .map((round) => {
       const { expTimeoutConfig, ...rest } = v2.allConfigs[round];
-      // TODO: carry the genesis reward amounts once XDC reward economics is
-      // finalized. Zeroed for now: puppeth writes fractional defaults (e.g.
-      // protectorReward: 45.6) that Nethermind's UInt256 parser rejects.
-      rest.masternodeReward = 0;
-      rest.protectorReward = 0;
-      rest.observerReward = 0;
+
       return rest;
     });
 
