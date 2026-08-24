@@ -1,5 +1,5 @@
 #!/bin/bash
-version="generator-v3.0.0"
+version="${GENERATOR_VERSION:-generator-v3.0.0}"
 current_dir="$(cd "$(dirname "$0")" && pwd)"
 network_name="docker_net"
 
