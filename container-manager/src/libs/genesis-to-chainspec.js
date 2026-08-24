@@ -35,7 +35,7 @@
  *   the remaining EIP transitions come from the hardfork that ships them, see
  *   TRANSITION_FORKS: constantinopleBlock, istanbulBlock, berlinBlock,
  *   londonBlock (eip1559Block wins for eip1559Transition), mergeBlock,
- *   shanghaiBlock, cancunBlock
+ *   shanghaiBlock, cancunBlock, pragueBlock
  *
  *   genesis.config.XDPoS.period             -> engine.XDPoS.params.period
  *   genesis.config.XDPoS.epoch              -> engine.XDPoS.params.epoch
@@ -69,8 +69,18 @@
  *
  * Present in genesis but with no counterpart in the chainspec schema, so
  * dropped rather than invented: v2 expTimeoutConfig, maxMasternodesV2,
- * SkipV1Validation, pragueBlock/osakaBlock, and the trc21IssuerSMC /
- * xdcxListingSMC / relayerRegistrationSMC / lendingRegistrationSMC addresses.
+ * SkipV1Validation, osakaBlock, and the trc21IssuerSMC / xdcxListingSMC /
+ * relayerRegistrationSMC / lendingRegistrationSMC addresses.
+ *
+ * Prague (pragueBlock) maps to exactly the three EIPs XDPoSChain gates on it:
+ * 2935, 7623 and 7702 — see TRANSITION_FORKS for what is deliberately left
+ * out. Unlike every other fork here these keys have no DEFAULT_PARAMS entry,
+ * so a genesis that says nothing about pragueBlock (XDC mainnet, chainId 50)
+ * omits them from the chainspec entirely and Prague stays off, rather than
+ * silently switching on at block 0.
+ *
+ * Prague also needs the EIP-2935 history contract to exist in state; this
+ * script warns when genesis would leave it missing. See checkPrague().
  * --------------------------------------------------------------------------
  */
 
@@ -88,6 +98,26 @@ const DEFAULT_CHAIN_NAME = 'xdpos-chain';
 
 // chainspec.genesis.baseFeePerGas is a concrete value while genesis.json has null.
 const DEFAULT_BASE_FEE_PER_GAS = '0x2e90edd00';
+
+// EIP-2935 history storage contract: a ring buffer of the last
+// 8191 block hashes, written once per block by a system call from
+// 0xfffffffffffffffffffffffffffffffffffffffe.
+//
+// It is a plain account with fixed bytecode, not a precompile, so the code has
+// to reach state somehow, and every client on the chain has to agree on when
+// it got there. XDPoSChain deploys it itself at the Prague block if the account
+// has no code (core/state_processor.go, ProcessParentBlockHash). Nethermind's
+// XdcBlockhashStore may or may not do the same — it does carry this bytecode as
+// a literal, so do not assume either way without testing the specific build.
+//
+// Pre-allocating the account sidesteps the question: both clients then start
+// from identical state and neither has to deploy anything. That is how
+// Ethereum's Hoodi genesis and XDPoSChain's own DeveloperGenesisBlock do it.
+// Leaving it out has been observed to fork a mixed XDPoSChain/Nethermind
+// network at block 1 — different state roots, no quorum, nothing committed.
+const HISTORY_STORAGE_ADDRESS = '0x0000f90827f1c53a10cb7a02335b175320002935';
+const HISTORY_STORAGE_CODE =
+  '0x3373fffffffffffffffffffffffffffffffffffffffe14604657602036036042575f35600143038111604257611fff81430311604257611fff9006545f5260205ff35b5f5ffd5b5f35611fff60014303065500';
 
 // All EIP transitions in chainspec.params that don't come straight from
 // genesis.config. Values copied from the reference chainspec.json.
@@ -183,6 +213,20 @@ const TRANSITION_FORKS = {
   eip5656Transition: 'cancunBlock',
   eip6780Transition: 'cancunBlock',
   eip7516Transition: 'cancunBlock',
+  // Prague. These three are the whole of what XDPoSChain gates on IsPrague:
+  // 2935 (history contract), 7623 (calldata floor cost) and 7702 (setcode tx,
+  // the only opcode-level change — newPragueInstructionSet is Cancun plus
+  // enable7702). Deliberately absent, because XDPoSChain does not implement
+  // them and switching them on for Nethermind alone would reintroduce exactly
+  // the state-root divergence this mapping exists to prevent:
+  //   2537 (BLS precompiles) — activePrecompiledContracts has no Prague case,
+  //                            it falls through to the EIP-1559 set
+  //   4788 / 6110 / 7002 / 7251 / 7685 — beacon-chain EIPs; 7685 would also
+  //                            add requestsHash to the block header
+  // No DEFAULT_PARAMS fallback on purpose: absent pragueBlock => key omitted.
+  eip2935Transition: 'pragueBlock',
+  eip7623Transition: 'pragueBlock',
+  eip7702Transition: 'pragueBlock',
 };
 
 /* ------------------------------------------------------------------ *
@@ -208,6 +252,61 @@ function pick(...candidates) {
 // cosmetic EIP-55 mixed-case checksum.
 function normalizeAddress(addr) {
   return '0x' + String(addr).toLowerCase().replace(/^0x/, '');
+}
+
+/* ------------------------------------------------------------------ *
+ * Prague / EIP-2935 sanity check
+ * ------------------------------------------------------------------ */
+
+// Emitting the Prague transitions is necessary but not sufficient: every client
+// on the chain must also agree on how the history contract got into state.
+// Returns the lines of a warning, or [] when there is nothing to report.
+// Advisory only — the chainspec is still written, because this script's job is
+// to translate genesis faithfully, not to edit the chain.
+function checkPrague(genesis) {
+  const pragueBlock = (genesis.config || {}).pragueBlock;
+  if (pragueBlock === undefined || pragueBlock === null) {
+    return []; // Prague never activates; nothing to check.
+  }
+
+  const alloc = genesis.alloc || {};
+  const present = Object.keys(alloc).some(
+    (addr) => normalizeAddress(addr) === HISTORY_STORAGE_ADDRESS
+  );
+  if (present) {
+    return [];
+  }
+
+  if (pragueBlock !== 0) {
+    // Genesis cannot help here: the contract is supposed to appear at the fork
+    // block, which is already in the chain's future or past.
+    return [
+      `Prague activates mid-chain at block ${pragueBlock}, so the EIP-2935 history`,
+      `contract at ${HISTORY_STORAGE_ADDRESS} cannot be supplied via genesis.alloc.`,
+      'XDPoSChain self-deploys it at that block. Confirm every other client on',
+      'the chain does the same, or they will fork there.',
+    ];
+  }
+
+  return [
+    'Prague is active from block 0, but genesis.alloc has no EIP-2935 history',
+    `contract at ${HISTORY_STORAGE_ADDRESS}.`,
+    '',
+    'XDPoSChain deploys it at block 1 and writes the parent hash into it. A',
+    'second client that does not do exactly the same thing computes a different',
+    'state root for every block, no quorum forms, and the chain stalls without',
+    'ever committing a block — this has been observed against Nethermind.',
+    '',
+    'Pre-allocating the account avoids relying on either client to deploy it.',
+    'Add this to genesis.alloc, then re-run this converter so it also reaches',
+    'chainspec.accounts (both files must match, or the genesis hashes differ):',
+    '',
+    `  "${HISTORY_STORAGE_ADDRESS.replace(/^0x/, '')}": {`,
+    '    "balance": "0x0",',
+    '    "nonce": "0x1",',
+    `    "code": "${HISTORY_STORAGE_CODE}"`,
+    '  }',
+  ];
 }
 
 /* ------------------------------------------------------------------ *
@@ -374,6 +473,16 @@ function main(argv) {
   const chainspec = translate(genesis, opts);
   const json = JSON.stringify(chainspec, null, 2) + '\n';
 
+  const pragueWarning = checkPrague(genesis);
+  if (pragueWarning.length) {
+    console.error('');
+    console.error('WARNING: Prague is enabled but the EIP-2935 history contract is missing.');
+    for (const line of pragueWarning) {
+      console.error(line ? `  ${line}` : '');
+    }
+    console.error('');
+  }
+
   try {
     fs.writeFileSync(outPath, json);
   } catch (e) {
@@ -388,4 +497,4 @@ if (require.main === module) {
   process.exit(main(process.argv));
 }
 
-module.exports = { translate, normalizeAddress };
+module.exports = { translate, normalizeAddress, checkPrague };
