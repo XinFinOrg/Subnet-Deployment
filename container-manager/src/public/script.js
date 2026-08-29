@@ -23,104 +23,8 @@ async function callStateApi(route, outElementId) {
   } catch (error) {
     console.error("Error:", error);
     outputDiv.textContent = "API call failed: " + error.message;
+    loadingFinished(); // never leave the page stuck behind pointer-events:none
   }
-}
-
-async function generate1(network, subswap) {
-  console.log("generate1");
-  loadingStart();
-  const parentnetWallet = await genAddress();
-  const parentnetZeroWallet = await genAddress();
-  const subnetWallet = await genAddress();
-  const subnetZeroWallet = await genAddress();
-  const formData = {
-    "text-subnet-name": "myxdcsubnet",
-    "text-num-subnet": "1",
-    "text-num-machine": "1",
-    "text-private-ip": "",
-    "text-public-ip": "",
-    "grandmaster-pk": "",
-    "customversion-subnet": "",
-    "customversion-bootnode": "",
-    "customversion-relayer": "",
-    "customversion-stats": "",
-    "customversion-frontend": "",
-    "customversion-csc": "",
-    "customversion-zero": "",
-    pnradio: `pn-radio-${network}`,
-    "parentnet-wallet-pk": parentnetWallet.privateKey,
-    rmradio: "rm-radio-full",
-    "parentnet-zero-wallet-pk": "",
-    zmradio: "zm-radio-one",
-    "subnet-wallet-pk": "",
-    "subnet-zero-wallet-pk": "",
-  };
-  if (subswap) {
-    formData["xdczero-checkbox"] = "on";
-    formData["parentnet-zero-wallet-pk"] = parentnetZeroWallet.privateKey;
-    formData["zmradio"] = "zm-radio-bi";
-    formData["subnet-wallet-pk"] = subnetWallet.privateKey;
-    formData["subnet-zero-wallet-pk"] = subnetZeroWallet.privateKey;
-    formData["subswap-checkbox"] = "on";
-  }
-  const response = await fetch("/submit_preconfig", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(formData),
-  });
-  const outdiv = document.getElementById("output1");
-  outdiv.textContent = await response.text();
-}
-
-async function generate3(network, subswap) {
-  console.log("generate3");
-  loadingStart();
-  const parentnetWallet = await genAddress();
-  const parentnetZeroWallet = await genAddress();
-  const subnetWallet = await genAddress();
-  const subnetZeroWallet = await genAddress();
-  const formData = {
-    "text-subnet-name": "myxdcsubnet",
-    "text-num-subnet": "3",
-    "text-num-machine": "1",
-    "text-private-ip": "",
-    "text-public-ip": "",
-    "grandmaster-pk": "",
-    "customversion-subnet": "",
-    "customversion-bootnode": "",
-    "customversion-relayer": "",
-    "customversion-stats": "",
-    "customversion-frontend": "",
-    "customversion-csc": "",
-    "customversion-zero": "",
-    pnradio: `pn-radio-${network}`,
-    "parentnet-wallet-pk": parentnetWallet.privateKey,
-    rmradio: "rm-radio-full",
-  };
-  if (subswap) {
-    formData["xdczero-checkbox"] = "on";
-    formData["parentnet-zero-wallet-pk"] = parentnetZeroWallet.privateKey;
-    formData["zmradio"] = "zm-radio-bi";
-    formData["subnet-wallet-pk"] = subnetWallet.privateKey;
-    formData["subnet-zero-wallet-pk"] = subnetZeroWallet.privateKey;
-    formData["subswap-checkbox"] = "on";
-  }
-  const response = await fetch("/submit_preconfig", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(formData),
-  });
-  const outdiv = document.getElementById("output1");
-  outdiv.textContent = await response.text();
-}
-
-async function genAddress() {
-  const response = await fetch("/address", { method: "GET" });
-  return response.json();
 }
 
 async function callStreamApi(route) {
@@ -205,17 +109,28 @@ function collapseHistoryDivs() {
 
 function adjustStateDivs(data) {
   if (data.deployState != "NONE") {
-    disableButtons("gen-button");
     checkSubnetStarted(data.containers.subnets);
     checkMiningState(data.mineInfo);
     checkServicesStarted(data.containers.services);
     checkSubswapFrontendStarted(data.containers.subswap);
     // checkExplorerStarted(data.containers.explorer);
-    showAddresses(data.requirements.addresses);
-    showCopyInstruction(data.requirements.subnetConfig);
-    showFaucet(data.requirements);
-    unhideContractButtons(data.requirements.requireContracts);
-    disableContractButtons(data.requirements.deployedContracts);
+    // INCOMPLETE means a generation started but never finished -- a failed
+    // submit leaves only some of the files behind, and /state reports no
+    // requirements for it. Keep the generator open in that case so the form can
+    // be corrected and resubmitted; only a finished config locks step 1.
+    if (data.requirements) {
+      disableGenEmbed();
+      showAddresses(data.requirements.addresses);
+      showCopyInstruction(data.requirements.subnetConfig);
+      showFaucet(data.requirements);
+      unhideContractButtons(data.requirements.requireContracts);
+      disableContractButtons(data.requirements.deployedContracts);
+    }
+  } else {
+    // back to a clean slate (the subnet was removed): reopen the generator and
+    // clear what the previous config had put on screen
+    enableGenEmbed();
+    resetParentnetInfo();
   }
 
   // allowClick()
@@ -223,12 +138,102 @@ function adjustStateDivs(data) {
 }
 
 function loadingFinished() {
-  document.getElementById("body-wrap").style.pointerEvents = "auto";
+  // debug.html has no #body-wrap, and this is now called from an error path
+  const wrap = document.getElementById("body-wrap");
+  if (wrap) {
+    wrap.style.pointerEvents = "auto";
+  }
 }
 
 function loadingStart() {
   document.getElementById("body-wrap").style.pointerEvents = "none";
   document.getElementById("state").textContent = "Status: Loading...";
+}
+
+function disableGenEmbed() {
+  const wrap = document.getElementById("gen-embed-wrap");
+  if (!wrap || wrap.classList.contains("disabled")) {
+    return;
+  }
+  wrap.classList.add("disabled");
+  document.getElementById("gen-embed-note").textContent =
+    "A subnet configuration already exists. Remove the subnet (/debug) before generating a new one.";
+}
+
+function enableGenEmbed() {
+  const wrap = document.getElementById("gen-embed-wrap");
+  if (!wrap || !wrap.classList.contains("disabled")) {
+    return;
+  }
+  wrap.classList.remove("disabled");
+  document.getElementById("gen-embed-note").textContent = "";
+  // the frame was left on whatever page it last showed, usually the submit
+  // result of the config that has just been removed
+  document.getElementById("gen-embed").src = "/gen";
+}
+
+// same-origin iframe, so the frame can be sized to the form it holds instead of
+// leaving the generator inside its own scrollbar
+function setupGenEmbedAutoResize() {
+  const iframe = document.getElementById("gen-embed");
+  if (!iframe) {
+    return;
+  }
+  const fit = () => {
+    try {
+      const doc = iframe.contentDocument;
+      if (!doc || !doc.body) {
+        return;
+      }
+      // measure the bottom of the content, not scrollHeight: the generator
+      // views render without a doctype, so they are in quirks mode where both
+      // body.scrollHeight and documentElement.scrollHeight are at least the
+      // frame's own height -- feeding either back in grows the frame forever.
+      const scrolled = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
+      let bottom = 0;
+      for (const child of doc.body.children) {
+        bottom = Math.max(bottom, child.getBoundingClientRect().bottom);
+      }
+      const height = Math.ceil(bottom + scrolled) + 16;
+      if (bottom > 0 && Math.abs(height - iframe.clientHeight) > 2) {
+        iframe.style.height = height + "px";
+      }
+    } catch (error) {
+      // keep the CSS fallback height
+      console.error("Error:", error);
+    }
+  };
+  let observing = false;
+  const attach = () => {
+    fit();
+    if (observing) {
+      return;
+    }
+    // the form grows and shrinks as its optional sections are toggled, so
+    // measuring once is not enough
+    try {
+      const body = iframe.contentDocument.body;
+      const observer = new ResizeObserver(fit);
+      // quirks mode leaves the body box stretched to the frame, so a section
+      // collapsing may not resize it -- watch the children that do shrink
+      observer.observe(body);
+      for (const child of body.children) {
+        observer.observe(child);
+      }
+      observing = true;
+    } catch (error) {
+      // body not parsed yet; the load event below retries
+      console.error("Error:", error);
+    }
+  };
+  iframe.addEventListener("load", () => {
+    // submitting the form navigates the frame, so the observed body is gone
+    observing = false;
+    attach();
+  });
+  // the frame is often already loaded by the time body onload runs, in which
+  // case the listener above never fires
+  attach();
 }
 
 function disableButtons(className) {
@@ -409,23 +414,97 @@ docker compose --profile machineX up -d;<br>
   }
 }
 
-function showFaucet(requirements) {
-  if (requirements.subnetConfig.parentnet == "testnet") {
-    const infoDiv = document.getElementById("mainnet-testnet-info");
-    infoDiv.textContent = "3. Add Testnet balance to: ";
-    const testnetFaucetInfo = document.getElementById("testnet-faucet-info");
-    testnetFaucetInfo.style.display = "block";
+// Faucet links shown in step 3, keyed by parentnet. Each url becomes its own
+// link. Mainnet has no faucet, so it is simply absent here and the line stays
+// hidden. Edit these to change what step 3 links to -- a plain
+// comma-separated string works too.
+const PARENTNET_FAUCETS = {
+  testnet: ["https://faucet.apothem.network/", "https://faucet.blocksscan.io/"],
+  devnet: ["https://faucet.devnet.xinfin.org/"],
+};
+
+// accepts an array or a comma-separated string, so either editing style works
+function faucetList(value) {
+  if (!value) {
+    return [];
   }
-  if (requirements.subnetConfig.parentnet == "mainnet") {
-    const infoDiv = document.getElementById("mainnet-testnet-info");
-    infoDiv.textContent = "3. Add Mainnet balance to: ";
+  const list = Array.isArray(value) ? value : String(value).split(",");
+  return list.map((url) => url.trim()).filter(Boolean);
+}
+
+// showFaucet only ever revealed things, so whatever the last config showed stuck
+// around -- after a /remove_subnet the old parentnet and its faucet stayed on
+// screen. Reset the lines first so each state renders from scratch.
+function resetParentnetInfo() {
+  document.getElementById("parentnet-name-line").style.display = "none";
+  document.getElementById("parentnet-url-line").style.display = "none";
+  document.getElementById("parentnet-faucet-line").style.display = "none";
+  // drop the links too so a hidden line never carries the previous faucets
+  document.getElementById("parentnet-faucet-links").textContent = "";
+}
+
+function showFaucet(requirements) {
+  resetParentnetInfo();
+  const config = requirements.subnetConfig;
+  const parentnet = config.parentnet;
+
+  if (parentnet === "") {
+    return;
+  }
+
+  document.getElementById("parentnet-name").textContent =
+    parentnet.charAt(0).toUpperCase() + parentnet.slice(1);
+  document.getElementById("parentnet-name-line").style.display = "block";
+
+  // the RPC the relayer and the contract deploys actually talk to
+  if (config.parentnetUrl) {
+    document.getElementById("parentnet-url").textContent = config.parentnetUrl;
+    document.getElementById("parentnet-url-line").style.display = "block";
+  }
+
+  const faucets = faucetList(PARENTNET_FAUCETS[parentnet]);
+  if (faucets.length > 0) {
+    const container = document.getElementById("parentnet-faucet-links");
+    faucets.forEach((url, i) => {
+      if (i > 0) {
+        container.appendChild(document.createTextNode(", "));
+      }
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.textContent = url;
+      container.appendChild(link);
+    });
+    document.getElementById("parentnet-faucet-line").style.display = "block";
   }
   // if (requirements.addresses.subnetWallet != "" || requirements.addresses.subnetZeroWallet != ""){
   //   const subnetFaucetInfo = document.getElementById("subnet-faucet-info")
   //   subnetFaucetInfo.style.display = "block"
   // }
 }
+// Address Generator helper (moved here with the Helpers section from /gen).
+// /address builds the wallet locally in the manager process -- nothing leaves
+// the machine, which is what the disclaimer next to the button refers to.
+async function genAddress() {
+  const pub = document.getElementById("address-gen-pub");
+  const pk = document.getElementById("address-gen-pk");
+  try {
+    const response = await fetch("/address", { method: "GET" });
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    pub.textContent = "Address: " + data.publicKey;
+    pk.textContent = "Private Key: " + data.privateKey;
+  } catch (error) {
+    console.error("Error:", error);
+    pub.textContent = "Error Generating Address";
+    pk.textContent = "Error Generating Address";
+  }
+}
+
 async function fetchLoop() {
+  setupGenEmbedAutoResize();
   await callStateApi("/state", "state");
   setInterval(() => {
     callStateApi("/state", "state");

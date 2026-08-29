@@ -118,37 +118,37 @@ const DEFAULT_BASE_FEE_PER_GAS = '0x2e90edd00';
 // All EIP transitions in chainspec.params that don't come straight from
 // genesis.config. Values copied from the reference chainspec.json.
 const DEFAULT_PARAMS = {
-  eip160Transition: 0,
-  eip145Transition: 0,
-  eip1014Transition: 0,
-  eip1052Transition: 0,
-  eip1234Transition: 0,
-  eip1283Transition: 0,
-  eip152Transition: 0,
-  eip1108Transition: 0,
-  eip1344Transition: 0,
-  eip1884Transition: 0,
+  eip160Transition: 999999999999,
+  eip145Transition: 999999999999,
+  eip1014Transition: 999999999999,
+  eip1052Transition: 999999999999,
+  eip1234Transition: 999999999999,
+  eip1283Transition: 999999999999,
+  eip152Transition: 999999999999,
+  eip1108Transition: 999999999999,
+  eip1344Transition: 999999999999,
+  eip1884Transition: 999999999999,
   eip2028Transition: 999999999999,
-  eip2200Transition: 0,
-  eip2565Transition: 0,
-  eip2718Transition: 0,
-  eip2930Transition: 0,
-  eip1559Transition: 0,
-  eip2929Transition: 0,
-  eip3198Transition: 0,
-  eip3529Transition: 0,
-  eip3541Transition: 0,
-  eip3554Transition: 0,
-  eip4399Transition: 0,
-  eip3651Transition: 0,
-  eip3855Transition: 0,
-  eip3860Transition: 0,
-  eip6049Transition: 0,
-  eip1153Transition: 0,
-  eip4844Transition: 0,
-  eip5656Transition: 0,
-  eip6780Transition: 0,
-  eip7516Transition: 0,
+  eip2200Transition: 999999999999,
+  eip2565Transition: 999999999999,
+  eip2718Transition: 999999999999,
+  eip2930Transition: 999999999999,
+  eip1559Transition: 999999999999,
+  eip2929Transition: 999999999999,
+  eip3198Transition: 999999999999,
+  eip3529Transition: 999999999999,
+  eip3541Transition: 999999999999,
+  eip3554Transition: 999999999999,
+  eip4399Transition: 999999999999,
+  eip3651Transition: 999999999999,
+  eip3855Transition: 999999999999,
+  eip3860Transition: 999999999999,
+  eip6049Transition: 999999999999,
+  eip1153Transition: 999999999999,
+  eip4844Transition: 999999999999,
+  eip5656Transition: 999999999999,
+  eip6780Transition: 999999999999,
+  eip7516Transition: 999999999999,
   eip1559ElasticityMultiplier: '0x1',
 };
 
@@ -157,12 +157,12 @@ const DEFAULT_ENGINE = {
   mergeSignRange: 15,
   RangeReturnSigner: 150,
   tip2019Block: 1,
-  DynamicGasLimitBlock: 0,
-  TipXDCX: 0,
-  blackListHFNumber: 0,
-  TipTrc21Fee: 0,
-  TIPXDCXMinerDisable: 0,
-  TIPXDCXReceiverDisable: 0,
+  DynamicGasLimitBlock: 9999999999999,
+  TipXDCX: 9999999999999,
+  blackListHFNumber: 9999999999999,
+  TipTrc21Fee: 9999999999999,
+  TIPXDCXMinerDisable: 9999999999999,
+  TIPXDCXReceiverDisable: 9999999999999,
   blackListedAddresses: ['0x0000000000000000000000000000000000000011'],
   masternodeVotingContract: '0x0000000000000000000000000000000000000088',
   blockSignerContract: '0x0000000000000000000000000000000000000089',
@@ -171,6 +171,38 @@ const DEFAULT_ENGINE = {
   TradingStateAddressBinary: '0x0000000000000000000000000000000000000092',
   XDCXLendingAddressBinary: '0x0000000000000000000000000000000000000093',
   XDCXLendingFinalizedTradeAddressBinary: '0x0000000000000000000000000000000000000094',
+};
+
+// The XDPoSSubnet engine plugin binds DIFFERENT property names than XDPoS, so a
+// subnet chainspec is not just XDPoS with a renamed engine block:
+//   XDPoS                      XDPoSSubnet
+//   mergeSignRange          -> MergeSignRange
+//   blackListHFNumber       -> BlackListHFNumber
+//   XDCXAddressBinary       -> XDCXAddrBinary          (a different name, not case)
+//   TradingStateAddressBinary -> tradingStateAddressBinary
+//   TipXDCX/TipTrc21Fee/TIPXDCXMinerDisable/TIPXDCXReceiverDisable -> not used at all
+// A name the engine does not bind is silently ignored and its own default
+// applies, which is how a chainspec can look correct and still diverge from the
+// Go nodes. Values below match a working Nethermind+Go subnet deployment.
+const DEFAULT_ENGINE_SUBNET = {
+  MergeSignRange: 15,
+  RangeReturnSigner: 150,
+  DynamicGasLimitBlock: 99999999999999,
+  tip2019Block: 1,
+  BlackListHFNumber: 99999999999999,
+  blackListedAddresses: [],
+  masternodeVotingContract: '0x0000000000000000000000000000000000000088',
+  blockSignerContract: '0x0000000000000000000000000000000000000089',
+  randomizeSMCBinary: '0x0000000000000000000000000000000000000090',
+  XDCXAddrBinary: '0x0000000000000000000000000000000000000091',
+  tradingStateAddressBinary: '0x0000000000000000000000000000000000000092',
+  XDCXLendingAddressBinary: '0x0000000000000000000000000000000000000093',
+  XDCXLendingFinalizedTradeAddressBinary: '0x0000000000000000000000000000000000000094',
+  // genesis allConfigs carries no maxMasternodes; this is XDC's own default and
+  // is what the working subnet chainspec states explicitly
+  maxMasternodes: 108,
+  // genesis states no switchEpoch on a subnet, and the engine wants it present
+  switchEpoch: 0,
 };
 
 // Which hardfork block in genesis.config activates each chainspec transition.
@@ -287,11 +319,17 @@ function translate(genesis, opts = {}) {
     .sort((a, b) => Number(a) - Number(b))
     .map((round) => {
       const { expTimeoutConfig, ...rest } = v2.allConfigs[round];
-
-      return rest;
+      if (!opts.subnet) {
+        return rest;
+      }
+      // genesis carries no maxMasternodes on a subnet, but the working subnet
+      // chainspec states it. Key spellings are left as genesis writes them --
+      // the reference capitalises them, but binding is case-insensitive.
+      return { maxMasternodes: DEFAULT_ENGINE_SUBNET.maxMasternodes, ...rest };
     });
 
-  const enginePadms = {
+  // chain data, identical on both engines
+  const shared = {
     period: xdpos.period,
     epoch: xdpos.epoch,
     reward: xdpos.reward,
@@ -304,34 +342,68 @@ function translate(genesis, opts = {}) {
     switchEpoch: v2.switchEpoch ?? v2.SwitchEpoch,
     switchBlock: v2.switchBlock ?? v2.SwitchBlock,
     v2Configs,
-    // no genesis counterpart: node-level constants, not chain data
-    mergeSignRange: DEFAULT_ENGINE.mergeSignRange,
-    RangeReturnSigner: DEFAULT_ENGINE.RangeReturnSigner,
-    // XDC hardfork blocks, named differently on each side
-    tip2019Block: pick(cfg.tip2019Block, DEFAULT_ENGINE.tip2019Block),
-    DynamicGasLimitBlock: pick(cfg.dynamicGasLimitBlock, DEFAULT_ENGINE.DynamicGasLimitBlock),
-    TipXDCX: pick(cfg.tipXDCXBlock, DEFAULT_ENGINE.TipXDCX),
-    blackListHFNumber: pick(cfg.denylistBlock, DEFAULT_ENGINE.blackListHFNumber),
-    TipTrc21Fee: pick(cfg.tipTRC21FeeBlock, DEFAULT_ENGINE.TipTrc21Fee),
-    TIPXDCXMinerDisable: pick(cfg.tipXDCXMinerDisableBlock, DEFAULT_ENGINE.TIPXDCXMinerDisable),
-    TIPXDCXReceiverDisable: pick(
-      cfg.tipXDCXReceiverDisableBlock,
-      DEFAULT_ENGINE.TIPXDCXReceiverDisable
-    ),
-    blackListedAddresses: DEFAULT_ENGINE.blackListedAddresses,
-    masternodeVotingContract: DEFAULT_ENGINE.masternodeVotingContract,
-    blockSignerContract: DEFAULT_ENGINE.blockSignerContract,
-    randomizeSMCBinary: DEFAULT_ENGINE.randomizeSMCBinary,
-    XDCXAddressBinary: DEFAULT_ENGINE.XDCXAddressBinary,
-    TradingStateAddressBinary: DEFAULT_ENGINE.TradingStateAddressBinary,
-    XDCXLendingAddressBinary: DEFAULT_ENGINE.XDCXLendingAddressBinary,
-    XDCXLendingFinalizedTradeAddressBinary: DEFAULT_ENGINE.XDCXLendingFinalizedTradeAddressBinary,
   };
+
+  // Key names below are the ones each engine actually binds -- see the note on
+  // DEFAULT_ENGINE_SUBNET. Emitted in the reference specs' own order so a
+  // generated spec diffs cleanly against them.
+  const enginePadms = opts.subnet
+    ? {
+        ...shared,
+        switchEpoch: shared.switchEpoch ?? DEFAULT_ENGINE_SUBNET.switchEpoch,
+        MergeSignRange: DEFAULT_ENGINE_SUBNET.MergeSignRange,
+        RangeReturnSigner: DEFAULT_ENGINE_SUBNET.RangeReturnSigner,
+        DynamicGasLimitBlock: pick(
+          cfg.dynamicGasLimitBlock,
+          DEFAULT_ENGINE_SUBNET.DynamicGasLimitBlock
+        ),
+        tip2019Block: pick(cfg.tip2019Block, DEFAULT_ENGINE_SUBNET.tip2019Block),
+        BlackListHFNumber: pick(cfg.denylistBlock, DEFAULT_ENGINE_SUBNET.BlackListHFNumber),
+        blackListedAddresses: DEFAULT_ENGINE_SUBNET.blackListedAddresses,
+        masternodeVotingContract: DEFAULT_ENGINE_SUBNET.masternodeVotingContract,
+        blockSignerContract: DEFAULT_ENGINE_SUBNET.blockSignerContract,
+        randomizeSMCBinary: DEFAULT_ENGINE_SUBNET.randomizeSMCBinary,
+        XDCXAddrBinary: DEFAULT_ENGINE_SUBNET.XDCXAddrBinary,
+        tradingStateAddressBinary: DEFAULT_ENGINE_SUBNET.tradingStateAddressBinary,
+        XDCXLendingAddressBinary: DEFAULT_ENGINE_SUBNET.XDCXLendingAddressBinary,
+        XDCXLendingFinalizedTradeAddressBinary:
+          DEFAULT_ENGINE_SUBNET.XDCXLendingFinalizedTradeAddressBinary,
+      }
+    : {
+        ...shared,
+        // no genesis counterpart: node-level constants, not chain data
+        mergeSignRange: DEFAULT_ENGINE.mergeSignRange,
+        RangeReturnSigner: DEFAULT_ENGINE.RangeReturnSigner,
+        // XDC hardfork blocks, named differently on each side
+        tip2019Block: pick(cfg.tip2019Block, DEFAULT_ENGINE.tip2019Block),
+        DynamicGasLimitBlock: pick(cfg.dynamicGasLimitBlock, DEFAULT_ENGINE.DynamicGasLimitBlock),
+        TipXDCX: pick(cfg.tipXDCXBlock, DEFAULT_ENGINE.TipXDCX),
+        blackListHFNumber: pick(cfg.denylistBlock, DEFAULT_ENGINE.blackListHFNumber),
+        TipTrc21Fee: pick(cfg.tipTRC21FeeBlock, DEFAULT_ENGINE.TipTrc21Fee),
+        TIPXDCXMinerDisable: pick(cfg.tipXDCXMinerDisableBlock, DEFAULT_ENGINE.TIPXDCXMinerDisable),
+        TIPXDCXReceiverDisable: pick(
+          cfg.tipXDCXReceiverDisableBlock,
+          DEFAULT_ENGINE.TIPXDCXReceiverDisable
+        ),
+        blackListedAddresses: DEFAULT_ENGINE.blackListedAddresses,
+        masternodeVotingContract: DEFAULT_ENGINE.masternodeVotingContract,
+        blockSignerContract: DEFAULT_ENGINE.blockSignerContract,
+        randomizeSMCBinary: DEFAULT_ENGINE.randomizeSMCBinary,
+        XDCXAddressBinary: DEFAULT_ENGINE.XDCXAddressBinary,
+        TradingStateAddressBinary: DEFAULT_ENGINE.TradingStateAddressBinary,
+        XDCXLendingAddressBinary: DEFAULT_ENGINE.XDCXLendingAddressBinary,
+        XDCXLendingFinalizedTradeAddressBinary:
+          DEFAULT_ENGINE.XDCXLendingFinalizedTradeAddressBinary,
+      };
 
   // XDC hardfork blocks carried straight through. Absent in genesis => absent
   // from the chainspec, so the fork stays off rather than activating at 0.
-  for (const [key, genesisKey] of Object.entries(ENGINE_FORKS)) {
-    enginePadms[key] = cfg[genesisKey];
+  // These are XDPoS spellings; the subnet engine binds none of them, and the
+  // working subnet chainspec carries none.
+  if (!opts.subnet) {
+    for (const [key, genesisKey] of Object.entries(ENGINE_FORKS)) {
+      enginePadms[key] = cfg[genesisKey];
+    }
   }
 
   // --- params (chain rules / EIP transitions) ---
@@ -373,9 +445,15 @@ function translate(genesis, opts = {}) {
         : genesis.baseFeePerGas,
   };
 
+  // Subnet nodes run a different consensus plugin than a standalone XDPoS
+  // network, and Nethermind selects it by this key. The mapping notes above
+  // spell it "engine.XDPoS" throughout; with opts.subnet the whole block is
+  // named engine.XDPoSSubnet instead, contents unchanged.
+  const engineName = opts.subnet ? "XDPoSSubnet" : "XDPoS";
+
   return {
     name: opts.name || DEFAULT_CHAIN_NAME,
-    engine: { XDPoS: { params: enginePadms } },
+    engine: { [engineName]: { params: enginePadms } },
     params,
     genesis: block,
     nodes: opts.nodes || [],
@@ -388,8 +466,10 @@ function translate(genesis, opts = {}) {
  * ------------------------------------------------------------------ */
 
 const USAGE =
-  'Usage: node genesis-to-chainspec.js <genesis.json> <chainspec.json> [--name <name>] [--base-fee <0x..>]\n' +
-  '       npm run convert -- <genesis.json> <chainspec.json> [--name <name>] [--base-fee <0x..>]\n' +
+  'Usage: node genesis-to-chainspec.js <genesis.json> <chainspec.json> [--subnet] [--name <name>] [--base-fee <0x..>]\n' +
+  '       npm run convert -- <genesis.json> <chainspec.json> [--subnet] [--name <name>] [--base-fee <0x..>]\n' +
+  '--subnet names the engine block XDPoSSubnet instead of XDPoS; use it for a\n' +
+  'Subnet deployment, leave it off for a standalone XDPoS network.\n' +
   'Both paths are required. Relative paths resolve against the current working\n' +
   'directory (/app when invoked through npm inside the container), so prefer\n' +
   'absolute paths such as /mount/generated/genesis.json.';
@@ -403,6 +483,8 @@ function main(argv) {
       opts.name = args[++i];
     } else if (args[i] === '--base-fee') {
       opts.baseFeePerGas = args[++i];
+    } else if (args[i] === '--subnet') {
+      opts.subnet = true;
     } else if (args[i] === '-h' || args[i] === '--help') {
       console.log(USAGE);
       return 0;

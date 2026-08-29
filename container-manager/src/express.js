@@ -175,8 +175,10 @@ app.post("/submit", (req, res) => {
     });
   } else {
     res.render("generator/submit.pug", {
+      // no "tab": the generator is embedded in the wizard's step 1, though it
+      // is still reachable on its own at /gen
       message:
-        "Config generation success, please continue in the Deployment Wizard tab",
+        "Config generation success, please continue with the next step in the Deployment Wizard",
     });
   }
 });

@@ -22,22 +22,53 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
     const port = 20302 + i;
     const rpcport = 8544 + i;
     const wsport = 9554 + i;
-    subnet_nodes[node_name] = {
-      image: `xinfinorg/xdcsubnets:${config.version.subnet}`,
-      volumes: [volume, "${HOSTPWD}/genesis.json:/work/genesis.json"],
-      restart: "always",
-      network_mode: "host",
-      env_file: [config_path],
-      profiles: [compose_profile],
-      ports: [
-        `${port}:${port}/tcp`,
-        `${port}:${port}/udp`,
-        `${rpcport}:${rpcport}/tcp`,
-        `${rpcport}:${rpcport}/udp`,
-        `${wsport}:${wsport}/tcp`,
-        `${wsport}:${wsport}/udp`,
-      ],
-    };
+    const port_mappings = [
+      `${port}:${port}/tcp`,
+      `${port}:${port}/udp`,
+      `${rpcport}:${rpcport}/tcp`,
+      `${rpcport}:${rpcport}/udp`,
+      `${wsport}:${wsport}/tcp`,
+      `${wsport}:${wsport}/udp`,
+    ];
+
+    if (configModule.isNethermindNode(i)) {
+      // Nethermind validator: per-node NETHERMIND_* vars come from
+      // subnet<i>nmc.env, shared/static settings from xdc-nmc.json, and the
+      // chain from chainspec.json rather than genesis.json. Deliberately keeps
+      // the subnet<i> service name and the same RPC port so the wizard's
+      // container discovery and mining check still find it (state.js keys off
+      // both). injectNetworkConfig() adds the networks/ipv4_address block.
+      subnet_nodes[node_name] = {
+        image: `${config.xdpos.nethermind}`,
+        volumes: [
+          volume,
+          "${HOSTPWD}/chainspec.json:/work/chainspec.json",
+          "${HOSTPWD}/xdc-nmc-subnet.json:/work/xdc-nmc.json",
+        ],
+        restart: "always",
+        env_file: [`subnet${i}nmc.env`],
+        command: [
+          "--config=/work/xdc-nmc.json",
+          "--datadir=/work/xdcchain",
+          "--log=debug",
+        ],
+        profiles: [compose_profile],
+        ports: port_mappings,
+      };
+    } else {
+      // Go XDC subnet node (default).
+      subnet_nodes[node_name] = {
+        image:
+          config.version.subnet_image ||
+          `xinfinorg/xdcsubnets:${config.version.subnet}`,
+        volumes: [volume, "${HOSTPWD}/genesis.json:/work/genesis.json"],
+        restart: "always",
+        network_mode: "host",
+        env_file: [config_path],
+        profiles: [compose_profile],
+        ports: port_mappings,
+      };
+    }
   }
   return subnet_nodes;
 }

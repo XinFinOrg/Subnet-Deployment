@@ -29,6 +29,18 @@ if [[ -z "$GENERATOR_IMAGE_VERSION" ]]; then
   exit 2
 fi
 
+# A Subnet chainspec names its engine block XDPoSSubnet, a standalone XDPoS
+# network names it XDPoS. The converter has to be told which, or the engine
+# block alone reads as a difference and the check would archive and overwrite a
+# perfectly good chainspec. Recorded in gen.env when the deployment is generated.
+if [[ -z "$CHAINSPEC_ENGINE" && -f gen.env ]]; then
+  CHAINSPEC_ENGINE=$(grep -E '^CHAINSPEC_ENGINE=' gen.env | tail -1 | cut -d '=' -f 2-)
+fi
+engine_flag=()
+if [[ "$CHAINSPEC_ENGINE" == "XDPoSSubnet" ]]; then
+  engine_flag=(--subnet)
+fi
+
 genesis="genesis.json"
 chainspec="chainspec.json"
 if [[ -n "$1" && "$1" != -* ]]; then
@@ -57,7 +69,7 @@ docker pull "$GENERATOR_IMAGE_VERSION"
 
 # -u keeps the archived and rewritten files owned by the invoking user
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/data" -w /data "$GENERATOR_IMAGE_VERSION" \
-  node /app/libs/check-chainspec.js "$genesis" "$chainspec" "$@"
+  node /app/libs/check-chainspec.js "$genesis" "$chainspec" "${engine_flag[@]}" "$@"
 result=$?
 
 # only 0, 2 and 3 come from the check itself; anything else is docker or node

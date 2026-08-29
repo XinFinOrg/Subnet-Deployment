@@ -162,7 +162,9 @@ function replaceChainspec(chainspecPath, expected, date) {
  * ------------------------------------------------------------------ */
 
 const USAGE =
-  'Usage: node check-chainspec.js <genesis.json> <chainspec.json> [--dry-run] [--name <name>] [--base-fee <0x..>]\n' +
+  'Usage: node check-chainspec.js <genesis.json> <chainspec.json> [--subnet] [--dry-run] [--name <name>] [--base-fee <0x..>]\n' +
+  '--subnet must match how the chainspec was generated (engine XDPoSSubnet vs\n' +
+  'XDPoS), otherwise the engine block alone reads as a difference.\n' +
   'Both paths are required. A differing chainspec is archived and replaced,\n' +
   'unless --dry-run is given.\n' +
   'Exit code: 0 already matched, 3 differed, 2 error.';
@@ -189,6 +191,8 @@ function main(argv) {
       opts.name = args[++i];
     } else if (args[i] === '--base-fee') {
       opts.baseFeePerGas = args[++i];
+    } else if (args[i] === '--subnet') {
+      opts.subnet = true;
     } else if (args[i] === '--dry-run') {
       dryRun = true;
     } else if (args[i] === '-h' || args[i] === '--help') {
