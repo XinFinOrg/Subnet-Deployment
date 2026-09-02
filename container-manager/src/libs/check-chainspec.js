@@ -12,11 +12,11 @@
  * translates to. Pass --dry-run to report without touching anything.
  *
  * Usage:
- *   node check-chainspec.js <genesis.json> <chainspec.json> [--dry-run] [--name <name>] [--base-fee <0x..>]
+ *   node check-chainspec.js <genesis.json> <chainspec.json> [--dry-run] [--name <name>]
  *
- * Both paths are required; there are no defaults. Pass --name / --base-fee when
- * the chainspec was produced with those flags, otherwise the translator defaults
- * are used (which is what the deployment pipeline does).
+ * Both paths are required; there are no defaults. Pass --name when the chainspec
+ * was produced with that flag, otherwise the translator defaults are used (which
+ * is what the deployment pipeline does).
  *
  * Exit codes:
  *   0  chainspec.json already matches genesis.json, nothing was touched
@@ -162,7 +162,7 @@ function replaceChainspec(chainspecPath, expected, date) {
  * ------------------------------------------------------------------ */
 
 const USAGE =
-  'Usage: node check-chainspec.js <genesis.json> <chainspec.json> [--subnet] [--dry-run] [--name <name>] [--base-fee <0x..>]\n' +
+  'Usage: node check-chainspec.js <genesis.json> <chainspec.json> [--subnet] [--dry-run] [--name <name>]\n' +
   '--subnet must match how the chainspec was generated (engine XDPoSSubnet vs\n' +
   'XDPoS), otherwise the engine block alone reads as a difference.\n' +
   'Both paths are required. A differing chainspec is archived and replaced,\n' +
@@ -189,8 +189,6 @@ function main(argv) {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--name') {
       opts.name = args[++i];
-    } else if (args[i] === '--base-fee') {
-      opts.baseFeePerGas = args[++i];
     } else if (args[i] === '--subnet') {
       opts.subnet = true;
     } else if (args[i] === '--dry-run') {
