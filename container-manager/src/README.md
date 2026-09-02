@@ -1,6 +1,48 @@
 # container-manager
 
-`npm run dev`
+## Run the generator app
+
+### Development mode
+
+```bash
+cd container-manager/src
+npm run dev
+```
+
+- XDPoS Private Network Generator: <http://localhost:5210/gen_xdpos>
+- Subnet Deployment Generator: <http://localhost:5210/>
+
+Generated files: `container-manager/mount/generated`
+
+### Container mode (how users run it)
+
+XDPoS Private Network Generator:
+
+```bash
+GENERATOR_VERSION=generator-v3.1.0 #YOUR TESTING VERSION HERE
+export GENERATOR_IMAGE_VERSION=xinfinorg/subnet-generator:$GENERATOR_VERSION
+
+curl -O https://raw.githubusercontent.com/XinFinOrg/Subnet-Deployment/$GENERATOR_VERSION/container-manager/start_xdpos.sh
+chmod +x start_xdpos.sh
+./start_xdpos.sh
+```
+
+Then go to <http://localhost:5210/gen_xdpos>
+
+Subnet Deployment Generator:
+
+```bash
+GENERATOR_VERSION=generator-v3.1.0 #YOUR TESTING VERSION HERE
+export GENERATOR_IMAGE_VERSION=xinfinorg/subnet-generator:$GENERATOR_VERSION
+
+curl -O https://raw.githubusercontent.com/XinFinOrg/Subnet-Deployment/$GENERATOR_VERSION/container-manager/start.sh
+chmod +x start.sh
+./start.sh
+```
+
+Then go to <http://localhost:5210/>
+
+Generated files land in `./generated`, next to the script.
 
 ## genesis.json -> chainspec.json
 
@@ -43,6 +85,17 @@ On a difference it lists the offending keys, moves the old file to
 exits `1` when it crashes. `docker-up.sh` stops on anything but `0`, so a
 repaired chainspec leaves you free to wipe node data directories before running
 it again.
+
+To boot without the check — a host that cannot pull the generator image, or a
+mismatch you know about and mean to keep — pass `--bypass`:
+
+```bash
+./docker-up.sh --bypass machine1
+```
+
+The flag only waives the check; nothing verifies that `chainspec.json` still
+matches `genesis.json`, so the Nethermind nodes may boot on a different config
+than the XDC nodes and never sync with them.
 
 The check runs in a throwaway subnet-generator container, which already carries
 the converter — the host needs docker only, no node. The image is the one that

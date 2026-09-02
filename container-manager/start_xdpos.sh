@@ -1,5 +1,5 @@
 #!/bin/bash
-image_version="${GENERATOR_IMAGE_VERSION:-xinfinorg/subnet-generator:generator-v3.0.0}"
+image_version="${GENERATOR_IMAGE_VERSION:-xinfinorg/subnet-generator:generator-v3.1.0}"
 current_dir="$(cd "$(dirname "$0")" && pwd)"
 network_name="docker_net"
 
