@@ -19,7 +19,20 @@
     "Enabled": true
   },
   "JsonRpc": {
-    "Enabled": true
+    "Enabled": true,
+    "EnabledModules": [
+      "Xdc",
+      "Eth",
+      "Subscribe",
+      "Trace",
+      "TxPool",
+      "Web3",
+      "Proof",
+      "Net",
+      "Parity",
+      "Health",
+      "Rpc"
+    ]
   },
   "Blocks": {
     "TargetBlockGasLimit": 50000000
