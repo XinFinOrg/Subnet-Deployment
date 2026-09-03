@@ -26,7 +26,7 @@ const config = {
     process.env.SERVICES_SECRET || crypto.randomBytes(10).toString("hex"),
   relayer_mode: process.env.RELAYER_MODE || "full",
   docker_image_name:
-    process.env.IMAGE_NAME || "xinfinorg/subnet-generator:generator-v3.0.0",
+    process.env.IMAGE_NAME || "xinfinorg/subnet-generator:generator-v3.1.0",
   version: {
     genesis: process.env.VERSION_GENESIS || "v0.3.1",
     subnet: process.env.VERSION_SUBNET || "v0.3.2",
