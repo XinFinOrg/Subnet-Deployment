@@ -167,7 +167,7 @@ function generateXdpos(params) {
   console.log("gen success");
 
   //step 2: generate genesis.json
-  let versionGenesisFullname = "xinfinorg/devnet:dev-upgrade-53e5601";
+  let versionGenesisFullname = "xinfinorg/devnet:test-generator-v3";
   if (
     "customversion-checkbox" in params && 
     params["customversion-checkbox"] != "" && 
@@ -180,6 +180,27 @@ function generateXdpos(params) {
   command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
   console.log(command);
   const [result2, out2] = callExec(command);
+  if (!result2) {
+    return [result2, out2];
+  }
+
+  //step 3: convert genesis.json -> chainspec.json. Nethermind nodes mount it,
+  //but generate it unconditionally so it is always available alongside genesis.json.
+  try {
+    const { translate } = require("./genesis-to-chainspec");
+    const genesis = JSON.parse(
+      fs.readFileSync(path.join(mountPath, "genesis.json"), "utf-8")
+    );
+    const chainspec = translate(genesis, {});
+    fs.writeFileSync(
+      path.join(mountPath, "chainspec.json"),
+      JSON.stringify(chainspec, null, 2) + "\n"
+    );
+    console.log("chainspec.json generated");
+  } catch (e) {
+    console.error("chainspec generation failed:", e.message);
+    return [false, `chainspec generation failed: ${e.message}`];
+  }
   return [result2, out2];
 }
 
@@ -200,9 +221,51 @@ function generate(params) {
     return [result, out];
   }
   console.log("gen success");
-  command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' xinfinorg/xdcsubnets:${config.version.genesis} /work/puppeth.sh`;
+
+  //step 2: generate genesis.json
+  let versionGenesisFullname = `xinfinorg/xdcsubnets:${config.version.genesis}`;
+  if (
+    "customclient-checkbox" in params &&
+    params["customclient-checkbox"] != "" &&
+    "customversion-xdpos-genesis-fullname" in params &&
+    params["customversion-xdpos-genesis-fullname"] != ""
+  ) {
+    versionGenesisFullname = `${params["customversion-xdpos-genesis-fullname"]}`;
+  }
+
+  command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
   console.log(command);
   const [result2, out2] = callExec(command);
+  if (!result2) {
+    return [result2, out2];
+  }
+
+  //step 3: convert genesis.json -> chainspec.json, which the Nethermind subnet
+  //nodes mount instead of genesis.json. Generated unconditionally so it is
+  //always available alongside genesis.json, but only fatal when a Nethermind
+  //node was actually asked for -- an all-Go subnet never reads it.
+  const nethermindCount = parseInt(
+    ("customclient-checkbox" in params && params["customclient-checkbox"] != ""
+      ? params["customversion-xdpos-nethermind-count"]
+      : 0) || 0
+  );
+  try {
+    const { translate } = require("./genesis-to-chainspec");
+    const genesis = JSON.parse(
+      fs.readFileSync(path.join(mountPath, "genesis.json"), "utf-8")
+    );
+    const chainspec = translate(genesis, { subnet: true });
+    fs.writeFileSync(
+      path.join(mountPath, "chainspec.json"),
+      JSON.stringify(chainspec, null, 2) + "\n"
+    );
+    console.log("chainspec.json generated");
+  } catch (e) {
+    console.error("chainspec generation failed:", e.message);
+    if (nethermindCount > 0) {
+      return [false, `chainspec generation failed: ${e.message}`];
+    }
+  }
   return [result2, out2];
 }
 
@@ -218,6 +281,14 @@ function callExec(command) {
     return [false, error.stdout];
     throw Error(error.stdout);
   }
+}
+
+// Every private key in the form is optional: a blank field means "make me one".
+// Generated here rather than in config_gen so the key is recorded in gen.env --
+// state.js reads the wallets back out of it to show the addresses the user has
+// to fund (step 3 of the wizard).
+function keyOrNew(value) {
+  return value != null && value !== "" ? value : ethers.Wallet.createRandom().privateKey;
 }
 
 function genGenEnv(input) {
@@ -261,7 +332,7 @@ function genGenEnv(input) {
   }
 
   let content_custom_key = "";
-  if (input["grandmaster-pk"] != "") {
+  if (input["grandmaster-pk"]) {
     content_custom_key += `\nGRANDMASTER_PK=${input["grandmaster-pk"]}`;
   }
 
@@ -272,15 +343,15 @@ function genGenEnv(input) {
     subnet_keys.push(input[key]);
     idx++;
   }
-  if (subnet_keys.length > 0) {
-    key_string = subnet_keys.join(",");
+  // all blank means the fields were never filled in: let config_gen generate the
+  // whole set. Otherwise fill only the gaps, since config_gen requires exactly
+  // one key per node and rejects a short or empty-valued list.
+  if (subnet_keys.some((k) => k !== "")) {
+    key_string = subnet_keys.map(keyOrNew).join(",");
     content_custom_key += `\nSUBNETS_PK=${key_string}`;
   }
 
   let content_version = "";
-  if (input["customversion-subnet"] != "") {
-    content_version += `\nVERSION_SUBNET=${input["customversion-subnet"]}`;
-  }
   if (input["customversion-bootnode"] != "") {
     content_version += `\nVERSION_BOOTNODE=${input["customversion-bootnode"]}`;
   }
@@ -300,6 +371,25 @@ function genGenEnv(input) {
     content_version += `\nVERSION_ZERO=${input["customversion-zero"]}`;
   }
 
+  // Custom Client: full image names and the Nethermind node count. Gated on the
+  // section's own checkbox so a collapsed section never overrides anything.
+  let content_client = "";
+  const clientOn =
+    "customclient-checkbox" in input && input["customclient-checkbox"] != "";
+  if (clientOn && input["customversion-xdpos-node-fullname"] != "") {
+    content_client += `\nVERSION_SUBNET_IMAGE=${input["customversion-xdpos-node-fullname"]}`;
+  }
+  if (clientOn && input["customversion-xdpos-nethermind-count"] != "") {
+    content_client += `\nNUM_NETHERMIND=${input["customversion-xdpos-nethermind-count"]}`;
+  }
+  if (clientOn && input["customversion-xdpos-nethermind-version"] != "") {
+    content_client += `\nVERSION_NETHERMIND_IMAGE=${input["customversion-xdpos-nethermind-version"]}`;
+  }
+  // scripts/check-chainspec.sh reads these back out of gen.env: the image it
+  // re-runs the converter in, and which engine block the chainspec should have
+  content_client += `\nGENERATOR_IMAGE_VERSION=${getGeneratorImage()}`;
+  content_client += `\nCHAINSPEC_ENGINE=XDPoSSubnet`;
+
   let content_zero = "";
   if (relayer_mode == "full" && "xdczero-checkbox" in input) {
     if (input["zmradio"] == "zm-radio-one") {
@@ -307,10 +397,14 @@ function genGenEnv(input) {
     }
     if (input["zmradio"] == "zm-radio-bi") {
       content_zero += "\nXDC_ZERO=bi-directional";
-      content_zero += `\nSUBNET_WALLET_PK=${input["subnet-wallet-pk"]}`;
-      content_zero += `\nSUBNET_ZERO_WALLET_PK=${input["subnet-zero-wallet-pk"]}`;
+      content_zero += `\nSUBNET_WALLET_PK=${keyOrNew(input["subnet-wallet-pk"])}`;
+      content_zero += `\nSUBNET_ZERO_WALLET_PK=${keyOrNew(
+        input["subnet-zero-wallet-pk"]
+      )}`;
     }
-    content_zero += `\nPARENTNET_ZERO_WALLET_PK=${input["parentnet-zero-wallet-pk"]}`;
+    content_zero += `\nPARENTNET_ZERO_WALLET_PK=${keyOrNew(
+      input["parentnet-zero-wallet-pk"]
+    )}`;
     if ("subswap-checkbox" in input) {
       content_zero += "\nSUBSWAP=true";
     }
@@ -320,7 +414,7 @@ function genGenEnv(input) {
 NETWORK_NAME=${input["text-subnet-name"]}
 NUM_SUBNET=${input["text-num-subnet"]}
 PARENTNET=${parentnet}
-PARENTNET_WALLET_PK=${input["parentnet-wallet-pk"]}
+PARENTNET_WALLET_PK=${keyOrNew(input["parentnet-wallet-pk"])}
 RELAYER_MODE=${relayer_mode}
 `;
   content += content_machine;
@@ -329,11 +423,31 @@ RELAYER_MODE=${relayer_mode}
   content += "\n";
   content += content_version;
   content += "\n";
+  content += content_client;
+  content += "\n";
   content += content_zero;
 
   console.log(content);
 
   return content;
+}
+
+// This manager runs inside the subnet-generator image, so ask docker which
+// image that is: recorded in gen.env, it lets the deployment run the pre-boot
+// chainspec check with the exact version that generated it. Falls back to the
+// configured image name when not running in a container (npm run dev).
+function getGeneratorImage() {
+  try {
+    const image = execSync(`docker inspect --format '{{.Config.Image}}' $(hostname)`, {
+      encoding: "utf-8",
+    }).trim();
+    if (image) {
+      return image;
+    }
+  } catch (e) {
+    console.error("cannot detect the generator image:", e.message);
+  }
+  return require("../gen/config_gen.js").config.docker_image_name;
 }
 
 function genGenXdposEnv(input){
@@ -374,6 +488,15 @@ function genGenXdposEnv(input){
   if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-node-fullname" in input && input["customversion-xdpos-node-fullname"] != "") {
     content_version += `\nVERSION_NODE_IMAGE=${input["customversion-xdpos-node-fullname"]}`;
   }
+  if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-nethermind-count" in input && input["customversion-xdpos-nethermind-count"] != "") {
+    content_version += `\nNUM_NETHERMIND=${input["customversion-xdpos-nethermind-count"]}`;
+  }
+  if ("customversion-checkbox" in input && input["customversion-checkbox"] != "" && "customversion-xdpos-nethermind-version" in input && input["customversion-xdpos-nethermind-version"] != "") {
+    content_version += `\nVERSION_NETHERMIND_IMAGE=${input["customversion-xdpos-nethermind-version"]}`;
+  }
+  content_version += `\nGENERATOR_IMAGE_VERSION=${getGeneratorImage()}`;
+
+
 
   let content_rewards = "";
   if ("customrewards-checkbox" in input && input["customrewards-checkbox"] != "") {

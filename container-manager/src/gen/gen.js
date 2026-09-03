@@ -76,7 +76,17 @@ doc, (ip_record = gen_compose.injectNetworkConfig(doc));
 const commonconf = gen_env.genServicesConfig(ip_record);
 subnetconf = [];
 for (let i = 1; i <= config.num_subnet; i++) {
-  subnetconf.push(gen_env.genSubnetConfig(i, keys, ip_record));
+  if (configModule.isNethermindNode(i)) {
+    subnetconf.push({
+      filename: `subnet${i}nmc.env`,
+      content: gen_env.genNethermindSubnetConfig(i, keys, ip_record),
+    });
+  } else {
+    subnetconf.push({
+      filename: `subnet${i}.env`,
+      content: gen_env.genSubnetConfig(i, keys, ip_record),
+    });
+  }
 }
 const deployconf = gen_env.genContractDeployEnv(ip_record);
 
@@ -146,8 +156,8 @@ function writeGenerated(output_dir) {
 
   for (let i = 1; i <= config.num_subnet; i++) {
     fs.writeFileSync(
-      `${output_dir}/subnet${i}.env`,
-      subnetconf[i - 1],
+      `${output_dir}/${subnetconf[i - 1].filename}`,
+      subnetconf[i - 1].content,
       (err) => {
         if (err) {
           console.error(err);
@@ -195,5 +205,19 @@ function copyScripts(output_dir) {
   fs.copyFileSync(
     `${__dirname}/scripts/add-node.sh`,
     `${output_dir}/scripts/add-node.sh`
+  );
+  // shared Nethermind config mounted by every nmc node, copied unconditionally
+  // so it is always available (chainspec.json is produced separately from
+  // genesis.json after puppeth runs). The subnet build differs from the
+  // private-network one gen_xdpos.js copies, so it has its own file.
+  fs.copyFileSync(
+    `${__dirname}/scripts/xdc-nmc-subnet.json`,
+    `${output_dir}/xdc-nmc-subnet.json`
+  );
+  // pre-boot check that chainspec.json still matches genesis.json; the check
+  // itself runs in a subnet-generator container, so only the wrapper is copied
+  fs.copyFileSync(
+    `${__dirname}/scripts/check-chainspec.sh`,
+    `${output_dir}/scripts/check-chainspec.sh`
   );
 }

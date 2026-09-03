@@ -1,6 +1,15 @@
 html
   head
     title="Submitted"
+    style
+      include ./pure-min.css
+      include ./custom.css
   body
     h1=message
     h1=error
+    if failed
+      //- only on failure: the server is still running, so going back lets the
+      //- user fix the form (history.back keeps the values already filled in).
+      //- keyed off `failed`, not `error` -- a failing step can exit with nothing
+      //- on stdout, and the button still has to show.
+      button.pure-button(type="button" onclick="history.back()") Back to the form

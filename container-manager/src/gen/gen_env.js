@@ -4,9 +4,21 @@ Object.freeze(config);
 
 module.exports = {
   genSubnetConfig,
+  genNethermindSubnetConfig,
   genServicesConfig,
   genContractDeployEnv,
 };
+
+// The bootnode container always starts from the same bootnode.key, so its enode
+// id is fixed; only the host it is reached on changes.
+const BOOTNODE_ENODE_ID =
+  "cc566d1033f21c7eb0eb9f403bb651f3949b5f63b40683917765c343f9c0c596e9cd021e2e8416908cbc3ab7d6f6671a83c85f7b121c1872f8be50a591723a5d";
+
+function bootnodeEnode(ip_record) {
+  const bootnode_ip =
+    config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
+  return `enode://${BOOTNODE_ENODE_ID}@${bootnode_ip}:20301`;
+}
 
 function genSubnetConfig(subnet_id, key, ip_record) {
   const key_name = `key${subnet_id}`;
@@ -15,15 +27,11 @@ function genSubnetConfig(subnet_id, key, ip_record) {
   const port = 20303 + subnet_id - 1;
   const rpcport = 8545 + subnet_id - 1;
   const wsport = 9555 + subnet_id - 1;
-  const bootnode_ip =
-    config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
   const stats_ip = config.num_machines === 1 ? ip_record["stats"] : config.ip_1;
   const config_env = `
 INSTANCE_NAME=subnet${subnet_id}
 PRIVATE_KEY=${private_key}
-BOOTNODES=enode://cc566d1033f21c7eb0eb9f403bb651f3949b5f63b40683917\
-765c343f9c0c596e9cd021e2e8416908cbc3ab7d6f6671a83c85f7b121c1872f8be\
-50a591723a5d@${bootnode_ip}:20301
+BOOTNODES=${bootnodeEnode(ip_record)}
 NETWORK_ID=${config.network_id}
 SYNC_MODE=full
 RPC_API=db,eth,debug,miner,net,shh,txpool,personal,web3,XDPoS
@@ -32,7 +40,37 @@ STATS_SECRET=${config.secret_string}
 PORT=${port}
 RPCPORT=${rpcport}
 WSPORT=${wsport}
-LOG_LEVEL=2
+LOG_LEVEL=4
+`;
+
+  return config_env;
+}
+
+// Per-node env file (subnet<i>nmc.env) for a Nethermind subnet node. Nethermind
+// reads NETHERMIND_<CATEGORY>CONFIG_<PROPERTY> env vars; everything shared and
+// static lives in xdc-nmc.json, so only per-node values are emitted here.
+// Ports match genSubnetConfig so a node keeps its slot when its client changes.
+function genNethermindSubnetConfig(subnet_id, key, ip_record) {
+  const private_key = key[`key${subnet_id}`]["PrivateKey"]; // 0x-prefixed, unlike the Go client's
+  const port = 20303 + subnet_id - 1;
+  const rpcport = 8545 + subnet_id - 1;
+  const ip = ip_record[`subnet${subnet_id}`];
+  const config_env = `
+NETHERMIND_JSONRPCCONFIG_ENABLED=true
+NETHERMIND_JSONRPCCONFIG_HOST=0.0.0.0
+NETHERMIND_JSONRPCCONFIG_PORT=${rpcport}
+NETHERMIND_NETWORKCONFIG_P2PPORT=${port}
+NETHERMIND_NETWORKCONFIG_DISCOVERYPORT=${port}
+NETHERMIND_NETWORKCONFIG_EXTERNALIP=${ip}
+NETHERMIND_NETWORKCONFIG_FILTERPEERSBYRECENTIP=true
+NETHERMIND_NETWORKCONFIG_BOOTNODES=${bootnodeEnode(ip_record)}
+NETHERMIND_INITCONFIG_DISCOVERYENABLED=true
+NETHERMIND_MININGCONFIG_ENABLED=true
+NETHERMIND_KEYSTORECONFIG_TESTNODEKEY=${private_key}
+NETHERMIND_HEALTHCHECKSCONFIG_ENABLED=true
+NETHERMIND_METRICSCONFIG_ENABLED=true
+NETHERMIND_METRICSCONFIG_EXPOSEPORT=8009
+NO_COLOR=1
 `;
 
   return config_env;

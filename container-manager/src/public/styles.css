@@ -122,10 +122,89 @@ h1 {
 
 
 
-#testnet-faucet-info {
+#parentnet-name-line,
+#parentnet-url-line,
+#parentnet-faucet-line {
   display: none;
 }
 
 #subnet-faucet-info {
   display: none;
+}
+
+#gen-embed-wrap {
+  margin: 10px;
+}
+
+#gen-embed {
+  display: block;
+  width: 780px;
+  max-width: 100%;
+  /* fallback only: setupGenEmbedAutoResize() fits this to the real content
+     height once /gen loads, and again whenever the form expands */
+  height: 900px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+#gen-embed-wrap.disabled #gen-embed {
+  display: none;
+}
+
+#gen-embed-note {
+  display: none;
+  margin: 0;
+  padding: 10px 20px;
+  background-color: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-family: monospace;
+  text-align: left;
+  width: 600px;
+}
+
+#gen-embed-wrap.disabled #gen-embed-note {
+  display: block;
+}
+
+#helpers {
+  margin-top: 20px;
+}
+
+/* matches .helper-block's width so it centres over the blocks, not over the
+   whole (wider) container */
+#helpers-title {
+  width: 600px;
+  max-width: 100%;
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.helper-block {
+  margin: 10px 0;
+  padding: 10px 20px;
+  background-color: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: 600px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.helper-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+#address-gen-pub,
+#address-gen-pk {
+  font-family: monospace;
+}
+
+#disclaimer {
+  font-size: 12px;
+  color: #666;
 }

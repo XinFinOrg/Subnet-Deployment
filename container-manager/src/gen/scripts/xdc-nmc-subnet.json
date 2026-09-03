@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/NethermindEth/core-scripts/refs/heads/main/schemas/config.json",
+  "Init": {
+    "ChainSpecPath": "/work/chainspec.json",
+    "BaseDbPath": "nethermind_db/xdc-nmc",
+    "LogFileName": "xdc.log",
+    "StateDbKeyScheme": "Hash",
+    "AutoDump": "All"
+  },
+  "TxPool": {
+    "BlobsSupport": "Disabled"
+  },
+  "Sync": {
+    "FastSync": true,
+    "NeedToWaitForHeader": true,
+    "VerifyTrieOnStateSyncFinished": true
+  },
+  "Mining": {
+    "Enabled": true
+  },
+  "JsonRpc": {
+    "Enabled": true,
+    "EnabledModules": [
+      "Xdc",
+      "Eth",
+      "Subscribe",
+      "Trace",
+      "TxPool",
+      "Web3",
+      "Proof",
+      "Net",
+      "Parity",
+      "Health",
+      "Rpc"
+    ]
+  },
+  "Blocks": {
+    "TargetBlockGasLimit": 420000000
+  },
+  "Merge": {
+    "Enabled": false
+  },
+  "TraceStore": {
+    "Enabled": false
+  }
+}

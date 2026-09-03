@@ -1,5 +1,5 @@
 # Use the official Node.js 18.15 image as the base
-FROM node:18.15
+FROM node:24
 
 # Install Docker CLI (required to interact with the Docker API)
 RUN apt-get update && apt-get install -y \

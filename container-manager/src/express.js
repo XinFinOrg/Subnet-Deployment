@@ -22,6 +22,46 @@ app.use(
 );
 app.use(express.json());
 
+// NON_SUBNET mode: when NON_SUBNET=true, block every subnet-management route
+// (including the wizard landing page "/") so only the XDPoS private-network
+// generator (/gen_xdpos, /submit_xdpos) remains reachable.
+const NON_SUBNET = process.env.NON_SUBNET === "true";
+const SUBNET_ROUTES = [
+  "/",
+  "/debug",
+  "/state",
+  "/deploy_csc_lite",
+  "/deploy_csc_full",
+  "/deploy_csc_reversefull",
+  "/deploy_zero",
+  "/deploy_subswap",
+  "/start_subnet",
+  "/stop_subnet",
+  "/start_subnet_slow",
+  "/start_services",
+  "/stop_services",
+  "/start_subswap_frontend",
+  "/stop_subswap_frontend",
+  "/start_explorer",
+  "/stop_explorer",
+  "/remove_subnet",
+  "/gen",
+  "/submit",
+  "/submit_preconfig",
+  "/faucet",
+  "/faucet_subnet",
+];
+
+app.use((req, res, next) => {
+  if (NON_SUBNET && SUBNET_ROUTES.includes(req.path)) {
+    console.log(`NON_SUBNET: blocked ${req.path}`);
+    return res
+      .status(403)
+      .json({ error: "Subnet routes are disabled (NON_SUBNET mode)" });
+  }
+  next();
+});
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
@@ -131,11 +171,14 @@ app.post("/submit", (req, res) => {
     res.render("generator/submit.pug", {
       message: "failed, please try again",
       error: genOut,
+      failed: true,
     });
   } else {
     res.render("generator/submit.pug", {
+      // no "tab": the generator is embedded in the wizard's step 1, though it
+      // is still reachable on its own at /gen
       message:
-        "Config generation success, please continue in the Deployment Wizard tab",
+        "Config generation success, please continue with the next step in the Deployment Wizard",
     });
   }
 });
@@ -147,11 +190,16 @@ app.post("/submit_xdpos", (req, res) => {
     res.render("xdpos_generator/submit.pug", {
       message: "failed, please try again",
       error: genOut,
+      failed: true,
     });
   } else {
+    // a single machine deployment needs no profile argument
+    const upCommand =
+      parseInt(req.body["text-num-machine"]) > 1
+        ? "'./docker-up.sh machine1;'"
+        : "'./docker-up.sh;'";
     res.render("xdpos_generator/submit.pug", {
-      message:
-        "Config generation success, please continue with 'cd generated;' then './docker-up.sh machine1;'",
+      message: `Config generation success, please continue with 'cd generated;' then ${upCommand}`,
     });
     process.exit(0);
   }
