@@ -73,6 +73,10 @@ inside the container is `./generated` on the host; relative paths resolve agains
 `genesis.json` and compares the result with `chainspec.json`, since a stale
 chainspec gives the Nethermind nodes a different config than the XDC nodes.
 
+Only when there is something to compare, though: `docker-up.sh` looks in
+`docker compose --profile <profile> config` for a node that mounts
+`chainspec.json`, and skips the check when none does.
+
 ```bash
 ./scripts/check-chainspec.sh              # check, and repair if they differ
 ./scripts/check-chainspec.sh --dry-run    # report only

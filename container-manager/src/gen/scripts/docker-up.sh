@@ -7,11 +7,18 @@ if ! which docker-compose > /dev/null 2>&1; then
   compose="docker compose"
 fi
 
+banner() {
+  local rule="======================================================================"
+  echo ""
+  echo "$rule"
+  printf '  %s\n' "$@"
+  echo "$rule"
+  echo ""
+}
+
 profiles=($($compose config --profiles))
 
-# the chainspec pre-check needs docker to pull and run the generator image; on a
-# host without that reach, or when the mismatch is known and deliberate, it can
-# be waived with --bypass
+# the chainspec pre-check can be waived with --bypass
 bypass=false
 
 profile=""
@@ -48,12 +55,11 @@ if [[ -z $profile ]]; then
   fi
 fi
 
-network_name="docker_net"
-if ! docker network inspect "$network_name" > /dev/null 2>&1; then
-  echo "Network '$network_name' does not exist. Creating it..."
-  docker network create --subnet 192.168.25.0/24 "$network_name"
-else
-  echo "Joining existing network '$network_name'"
+if ! compose_config=$($compose --profile "$profile" config 2>&1); then
+  echo "$compose_config"
+  echo ""
+  echo "docker-compose.yml could not be read, not booting."
+  exit 2
 fi
 
 
@@ -61,20 +67,34 @@ fi
 # Nethermind nodes boot on a different config than the XDC nodes.
 if [[ $bypass == true ]]; then
   echo "Bypassing chainspec pre-check; chainspec.json is not verified against genesis.json."
+elif ! grep -q 'target: /work/chainspec.json' <<< "$compose_config"; then
+  echo "No node in profile '$profile' mounts chainspec.json, skipping the pre-check."
 else
   bash scripts/check-chainspec.sh
   check_result=$?
   if [[ $check_result == 3 ]]; then
-    echo ""
-    echo "chainspec.json was updated and the old copy saved as backup in archive directory."
-    echo "Run the previous command again to start the chain!"
+    banner \
+      "chainspec.json did not match genesis.json, and has been updated." \
+      "The old copy is kept as a backup in the archive directory." \
+      "" \
+      "NOTHING WAS STARTED." \
+      "Run the previous command again to start the chain!"
     exit 1
   elif [[ $check_result != 0 ]]; then
-    echo ""
-    echo "chainspec pre-check failed, not booting."
-    echo "Re-run with --bypass to boot anyway."
+    banner \
+      "chainspec pre-check failed, NOT booting." \
+      "" \
+      "Re-run with --bypass to boot anyway."
     exit $check_result
   fi
+fi
+
+network_name="docker_net"
+if ! docker network inspect "$network_name" > /dev/null 2>&1; then
+  echo "Network '$network_name' does not exist. Creating it..."
+  docker network create --subnet 192.168.25.0/24 "$network_name"
+else
+  echo "Joining existing network '$network_name'"
 fi
 
 

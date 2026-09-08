@@ -167,7 +167,7 @@ function generateXdpos(params) {
   console.log("gen success");
 
   //step 2: generate genesis.json
-  let versionGenesisFullname = "xinfinorg/devnet:test-generator-v3";
+  let versionGenesisFullname = config.version.xdposnode;
   if (
     "customversion-checkbox" in params && 
     params["customversion-checkbox"] != "" && 
@@ -177,9 +177,17 @@ function generateXdpos(params) {
     versionGenesisFullname = `${params["customversion-xdpos-genesis-fullname"]}`;
   }
 
-  command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
+  // a local copy of the tag can be outdated and docker will not re-pull it on
+  // its own; the pull is non-fatal so a locally built image that was never
+  // pushed (or a host with no registry access) still runs off what is there
+  command =
+    `cd ${mountPath}; ` +
+    `docker pull ${versionGenesisFullname} || ` +
+    `echo 'docker pull failed, using local copy of ${versionGenesisFullname} if present'; ` +
+    `docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
   console.log(command);
-  const [result2, out2] = callExec(command);
+  // the pull shares the exec timeout with puppeth, so allow for a cold fetch
+  const [result2, out2] = callExec(command, 600000);
   if (!result2) {
     return [result2, out2];
   }
@@ -233,9 +241,17 @@ function generate(params) {
     versionGenesisFullname = `${params["customversion-xdpos-genesis-fullname"]}`;
   }
 
-  command = `cd ${mountPath}; docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
+  // a local copy of the tag can be outdated and docker will not re-pull it on
+  // its own; the pull is non-fatal so a locally built image that was never
+  // pushed (or a host with no registry access) still runs off what is there
+  command =
+    `cd ${mountPath}; ` +
+    `docker pull ${versionGenesisFullname} || ` +
+    `echo 'docker pull failed, using local copy of ${versionGenesisFullname} if present'; ` +
+    `docker run -v ${config.hostPath}:/app/generated/ --entrypoint 'bash' ${versionGenesisFullname} /work/puppeth.sh`;
   console.log(command);
-  const [result2, out2] = callExec(command);
+  // the pull shares the exec timeout with puppeth, so allow for a cold fetch
+  const [result2, out2] = callExec(command, 600000);
   if (!result2) {
     return [result2, out2];
   }
@@ -269,9 +285,9 @@ function generate(params) {
   return [result2, out2];
 }
 
-function callExec(command) {
+function callExec(command, timeout = 300000) {
   try {
-    const stdout = execSync(command, { timeout: 200000, encoding: "utf-8" });
+    const stdout = execSync(command, { timeout, encoding: "utf-8" });
     output = stdout.toString();
 
     // console.log(output);
