@@ -5,6 +5,7 @@ const path = require("path");
 const mountPath = path.join(__dirname, "../../mount/generated/");
 const configModule = require("../gen/config_gen.js");
 const version = configModule.config.version;
+const xdpos = configModule.config.xdpos;
 const config = {};
 
 module.exports = config;
@@ -24,6 +25,8 @@ function initModule() {
   }
   console.log("init with versions", version);
   config["version"] = version;
+  console.log("init with xdpos versions", xdpos);
+  config["xdpos"] = xdpos;
 }
 
 function checkMountPath() {

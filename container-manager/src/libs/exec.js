@@ -167,7 +167,7 @@ function generateXdpos(params) {
   console.log("gen success");
 
   //step 2: generate genesis.json
-  let versionGenesisFullname = config.version.xdposnode;
+  let versionGenesisFullname = config.xdpos.xdposnode;
   if (
     "customversion-checkbox" in params && 
     params["customversion-checkbox"] != "" && 
