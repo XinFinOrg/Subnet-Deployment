@@ -2,6 +2,9 @@ process.chdir(__dirname);
 const fs = require("fs");
 const state = require("./libs/state");
 const exec = require("./libs/exec");
+// the generator form's placeholders come from the same defaults the generator
+// itself uses, so an image default is written once in gen/config_gen.js
+const config = require("./libs/config");
 const path = require("path");
 const ethers = require("ethers");
 const consolidate = require("consolidate");
@@ -156,11 +159,14 @@ app.get("/remove_subnet", async (req, res) => {
 
 // generator methods (also pug instead of html)
 app.get("/gen", (req, res) => {
-  res.render("generator/index.pug", {});
+  res.render("generator/index.pug", {
+    version: config.version,
+    xdpos: config.xdpos,
+  });
 });
 
 app.get("/gen_xdpos", (req, res) => {
-  res.render("xdpos_generator/index.pug", {});
+  res.render("xdpos_generator/index.pug", { xdpos: config.xdpos });
 });
 
 app.post("/submit", (req, res) => {

@@ -127,17 +127,17 @@ body
           center 
           .pure-control-group 
             label() Node Version
-            input#customversion-xdpos-node-fullname.pure-input-2-3(type='text' placeholder='xinfinorg/xdcsubnets:v0.3.2' value='xinfinorg/xdcsubnets:v0.3.2' name="customversion-xdpos-node-fullname")
+            input#customversion-xdpos-node-fullname.pure-input-2-3(type='text' placeholder=(version.subnet_image || 'xinfinorg/xdcsubnets:' + version.subnet) value=(version.subnet_image || 'xinfinorg/xdcsubnets:' + version.subnet) name="customversion-xdpos-node-fullname")
           .pure-control-group 
             label() Genesis Version
-            input#customversion-xdpos-genesis-fullname.pure-input-2-3(type='text' placeholder='xinfinorg/xdcsubnets:v0.3.1' value='xinfinorg/xdcsubnets:v0.3.1' name="customversion-xdpos-genesis-fullname")
+            input#customversion-xdpos-genesis-fullname.pure-input-2-3(type='text' placeholder='xinfinorg/xdcsubnets:' + version.genesis value='xinfinorg/xdcsubnets:' + version.genesis name="customversion-xdpos-genesis-fullname")
           .pure-control-group 
             label() Number of Nethermind Nodes
             input#customversion-xdpos-nethermind-count.pure-input(type='number' placeholder='0' value='0' name="customversion-xdpos-nethermind-count")
             span.pure-form-message-inline The last N nodes run Nethermind
           .pure-control-group 
             label() Nethermind Node Version
-            input#customversion-xdpos-nethermind-version.pure-input-2-3(type='text' placeholder='nethermindeth/nethermind:master-d4ef4fd' value='nethermindeth/nethermind:master-d4ef4fd' name="customversion-xdpos-nethermind-version")
+            input#customversion-xdpos-nethermind-version.pure-input-2-3(type='text' placeholder=xdpos.nethermind value=xdpos.nethermind name="customversion-xdpos-nethermind-version")
 
       .pure-control-group 
         .info-container 
@@ -149,22 +149,22 @@ body
           center 
           .pure-control-group 
             label() Bootnode Version
-            input#customversion-bootnode.pure-input(type='text' placeholder='v0.3.1' value='v0.3.1' name="customversion-bootnode")
+            input#customversion-bootnode.pure-input(type='text' placeholder=version.bootnode value=version.bootnode name="customversion-bootnode")
           .pure-control-group 
             label() Relayer Version
-            input#customversion-relayer.pure-input(type='text' placeholder='v0.3.1' value='v0.3.1' name="customversion-relayer")
+            input#customversion-relayer.pure-input(type='text' placeholder=version.relayer value=version.relayer name="customversion-relayer")
           .pure-control-group 
             label() Backend Stats Server Version
-            input#customversion-stats.pure-input(type='text' placeholder='v0.1.11' value='v0.1.11' name="customversion-stats")
+            input#customversion-stats.pure-input(type='text' placeholder=version.stats value=version.stats name="customversion-stats")
           .pure-control-group 
             label() Frontend Version
-            input#customversion-frontend.pure-input(type='text' placeholder='v0.1.12' value='v0.1.12' name="customversion-frontend")
+            input#customversion-frontend.pure-input(type='text' placeholder=version.frontend value=version.frontend name="customversion-frontend")
           .pure-control-group 
             label() CSC Version
-            input#customversion-csc.pure-input(type='text' placeholder='v0.3.0' value='v0.3.0' name="customversion-csc")
+            input#customversion-csc.pure-input(type='text' placeholder=version.csc value=version.csc name="customversion-csc")
           .pure-control-group 
             label() XDC-Zero Version
-            input#customversion-zero.pure-input(type='text' placeholder='v0.3.0' value='v0.3.0' name="customversion-zero")
+            input#customversion-zero.pure-input(type='text' placeholder=version.zero value=version.zero name="customversion-zero")
 
  
     fieldset
