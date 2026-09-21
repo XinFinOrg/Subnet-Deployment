@@ -193,7 +193,15 @@ function generateXdpos(params) {
   }
 
   //step 3: convert genesis.json -> chainspec.json. Nethermind nodes mount it,
-  //but generate it unconditionally so it is always available alongside genesis.json.
+  //but generate it unconditionally so it is always available alongside
+  //genesis.json. Only fatal when a Nethermind node was actually asked for -- an
+  //all-Go network never reads the chainspec, so a failure there must not block
+  //the deployment. Counted exactly as genGenXdposEnv records NUM_NETHERMIND.
+  const nethermindCount = parseInt(
+    ("customversion-checkbox" in params && params["customversion-checkbox"] != ""
+      ? params["customversion-xdpos-nethermind-count"]
+      : 0) || 0
+  );
   const warnings = [];
   try {
     const { translate } = require("./genesis-to-chainspec");
@@ -215,7 +223,15 @@ function generateXdpos(params) {
     console.log("chainspec.json generated");
   } catch (e) {
     console.error("chainspec generation failed:", e.message);
-    return [false, `chainspec generation failed: ${e.message}`];
+    if (nethermindCount > 0) {
+      return [false, `chainspec generation failed: ${e.message}`];
+    }
+    // no Nethermind node to read it; surface it rather than fail the deployment
+    warnings.push(
+      `chainspec.json was not generated: ${e.message} ` +
+        '(no Nethermind node was requested, so nothing reads it and the ' +
+        'deployment continues; add one only after fixing this)'
+    );
   }
   return [result2, out2, warnings];
 }
@@ -295,6 +311,12 @@ function generate(params) {
     if (nethermindCount > 0) {
       return [false, `chainspec generation failed: ${e.message}`];
     }
+    // no Nethermind node to read it; surface it rather than fail the deployment
+    warnings.push(
+      `chainspec.json was not generated: ${e.message} ` +
+        '(no Nethermind node was requested, so nothing reads it and the ' +
+        'deployment continues; add one only after fixing this)'
+    );
   }
   return [result2, out2, warnings];
 }
