@@ -773,7 +773,7 @@ function buildEngineParams(cfg, opts) {
 }
 
 // params: the chain rules, which here is almost entirely EIP transitions.
-function buildParams(cfg, opts) {
+function buildParams(cfg, opts, warn) {
   const paramDefaults = opts.subnet ? DEFAULT_PARAMS_SUBNET : DEFAULT_PARAMS;
 
   const params = {};
@@ -795,7 +795,7 @@ function buildParams(cfg, opts) {
 
   // no genesis counterpart
   params.eip1559ElasticityMultiplier = paramDefaults.eip1559ElasticityMultiplier;
-  params.MaxCodeSize = pickMaxCodeSize(cfg, params.MaxCodeSizeTransition, paramDefaults);
+  params.MaxCodeSize = pickMaxCodeSize(cfg, params.MaxCodeSizeTransition, paramDefaults, warn);
 
   return params;
 }
@@ -810,14 +810,14 @@ function buildParams(cfg, opts) {
 // between two. It still lands exactly right in the case that matters for a new
 // subnet: when osakaBlock is at or before the limit's own start, 32768 is the
 // only limit the chain ever has, so that is the value to emit.
-function pickMaxCodeSize(cfg, maxCodeSizeTransition, paramDefaults) {
+function pickMaxCodeSize(cfg, maxCodeSizeTransition, paramDefaults, warn) {
   const osakaBlock = cfg.osakaBlock;
   if (osakaBlock === undefined || osakaBlock === null) {
     return paramDefaults.MaxCodeSize;
   }
 
   // maxCodeSize is the one piece of Osaka a chainspec can carry at all.
-  console.error(
+  warn(
     `Warning: genesis states osakaBlock ${osakaBlock}, but Nethermind's XDC ` +
       'build declares every Osaka EIP as eipNNNNTransitionTimestamp with no ' +
       'block-numbered form, so 7823, 7825, 7883, 7934 and 7939 cannot be turned ' +
@@ -833,7 +833,7 @@ function pickMaxCodeSize(cfg, maxCodeSizeTransition, paramDefaults) {
   // Two limits, one slot. 24576 is kept because it is right for the stretch from
   // eip158Block to osakaBlock; from osakaBlock on, Nethermind is stricter than
   // the Go nodes and rejects a deploy they accept.
-  console.error(
+  warn(
     `Warning: genesis states osakaBlock ${osakaBlock}, later than ` +
       `maxCodeSizeTransition ${maxCodeSizeTransition}. XDPoSChain raises ` +
       'its code limit to 32768 there; the chainspec holds one limit only, so it ' +
@@ -867,6 +867,15 @@ function buildGenesisBlock(genesis, opts) {
 function translate(genesis, opts = {}) {
   const cfg = genesis.config || {};
 
+  // Warnings go to opts.warnings when the caller supplies an array, else to
+  // console.error. The CLI leaves it unset and so keeps writing to stderr, which
+  // is what check-chainspec.sh surfaces; the container-manager passes an array,
+  // because in-process console.error only reaches the container log while the
+  // operator's page says success.
+  const warn = Array.isArray(opts.warnings)
+    ? (message) => opts.warnings.push(message)
+    : (message) => console.error(message);
+
   // Subnet nodes run a different consensus plugin than a standalone XDPoS
   // network, and Nethermind selects it by this key. The mapping notes above
   // spell it "engine.XDPoS" throughout; with opts.subnet the whole block is
@@ -876,7 +885,7 @@ function translate(genesis, opts = {}) {
   return {
     name: opts.name || DEFAULT_CHAIN_NAME,
     engine: { [engineName]: { params: buildEngineParams(cfg, opts) } },
-    params: buildParams(cfg, opts),
+    params: buildParams(cfg, opts, warn),
     genesis: buildGenesisBlock(genesis, opts),
     nodes: opts.nodes || [],
     accounts: genesis.alloc || {},

@@ -171,7 +171,7 @@ app.get("/gen_xdpos", (req, res) => {
 
 app.post("/submit", (req, res) => {
   console.log("/submit called");
-  const [valid, genOut] = exec.generate(req.body);
+  const [valid, genOut, warnings] = exec.generate(req.body);
 
   if (!valid) {
     res.render("generator/submit.pug", {
@@ -185,13 +185,16 @@ app.post("/submit", (req, res) => {
       // is still reachable on its own at /gen
       message:
         "Config generation success, please continue with the next step in the Deployment Wizard",
+      // the chainspec converter's warnings; without this they reach the
+      // container log only, and the operator sees an unqualified success
+      warnings,
     });
   }
 });
 
 app.post("/submit_xdpos", (req, res) => {
   console.log("/submit_xdpos called");
-  const [valid, genOut] = exec.generateXdpos(req.body);
+  const [valid, genOut, warnings] = exec.generateXdpos(req.body);
   if (!valid) {
     res.render("xdpos_generator/submit.pug", {
       message: "failed, please try again",
@@ -206,6 +209,8 @@ app.post("/submit_xdpos", (req, res) => {
         : "'./docker-up.sh;'";
     res.render("xdpos_generator/submit.pug", {
       message: `Config generation success, please continue with 'cd generated;' then ${upCommand}`,
+      // see /submit: the converter's warnings otherwise never leave the container
+      warnings,
     });
     process.exit(0);
   }

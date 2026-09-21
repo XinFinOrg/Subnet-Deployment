@@ -194,12 +194,15 @@ function generateXdpos(params) {
 
   //step 3: convert genesis.json -> chainspec.json. Nethermind nodes mount it,
   //but generate it unconditionally so it is always available alongside genesis.json.
+  const warnings = [];
   try {
     const { translate } = require("./genesis-to-chainspec");
     const genesis = JSON.parse(
       fs.readFileSync(path.join(mountPath, "genesis.json"), "utf-8")
     );
-    const chainspec = translate(genesis, {});
+    // translate() writes to console.error unless given a sink, and console.error
+    // here lands in the container log while the operator's page says success.
+    const chainspec = translate(genesis, { warnings });
     fs.writeFileSync(
       path.join(mountPath, "chainspec.json"),
       JSON.stringify(chainspec, null, 2) + "\n"
@@ -209,7 +212,7 @@ function generateXdpos(params) {
     console.error("chainspec generation failed:", e.message);
     return [false, `chainspec generation failed: ${e.message}`];
   }
-  return [result2, out2];
+  return [result2, out2, warnings];
 }
 
 function generate(params) {
@@ -265,12 +268,14 @@ function generate(params) {
       ? params["customversion-xdpos-nethermind-count"]
       : 0) || 0
   );
+  const warnings = [];
   try {
     const { translate } = require("./genesis-to-chainspec");
     const genesis = JSON.parse(
       fs.readFileSync(path.join(mountPath, "genesis.json"), "utf-8")
     );
-    const chainspec = translate(genesis, { subnet: true });
+    // see the note on the XDPoS path: warnings need a sink to reach the operator
+    const chainspec = translate(genesis, { subnet: true, warnings });
     fs.writeFileSync(
       path.join(mountPath, "chainspec.json"),
       JSON.stringify(chainspec, null, 2) + "\n"
@@ -282,7 +287,7 @@ function generate(params) {
       return [false, `chainspec generation failed: ${e.message}`];
     }
   }
-  return [result2, out2];
+  return [result2, out2, warnings];
 }
 
 function callExec(command, timeout = 300000) {
