@@ -441,7 +441,7 @@ function genGenEnv(input) {
   }
 
   content = `
-NETWORK_NAME=${input["text-subnet-name"]}
+NETWORK_NAME=${input["text-subnet-name"] || ""}
 NUM_SUBNET=${input["text-num-subnet"]}
 PARENTNET=${parentnet}
 PARENTNET_WALLET_PK=${keyOrNew(input["parentnet-wallet-pk"])}
@@ -546,7 +546,7 @@ function genGenXdposEnv(input){
   }
 
   content = `
-NETWORK_NAME=${input["text-subnet-name"]}
+NETWORK_NAME=${input["text-subnet-name"] || ""}
 NUM_SUBNET=${input["text-num-subnet"]}
 `;
   content += content_machine;

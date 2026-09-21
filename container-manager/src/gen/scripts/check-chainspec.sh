@@ -63,7 +63,12 @@ name_flag=()
 if [[ -z "$NETWORK_NAME" && -f gen.env ]]; then
   NETWORK_NAME=$(grep -E '^NETWORK_NAME=' gen.env | tail -1 | cut -d '=' -f 2-)
 fi
-if [[ -n "$NETWORK_NAME" ]]; then
+# The literal "undefined" is what gen.env gets when the generator ran without a
+# network name in its input; the converter saw JS undefined there and fell back
+# to its own default, so the chainspec is NOT called "undefined". Passing it
+# would make the check differ on the name alone and rewrite a correct chainspec
+# on every run -- the exact failure this flag exists to prevent.
+if [[ -n "$NETWORK_NAME" && "$NETWORK_NAME" != "undefined" ]]; then
   name_flag=(--name "$NETWORK_NAME")
 fi
 
