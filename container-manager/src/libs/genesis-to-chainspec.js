@@ -720,6 +720,19 @@ function buildEngineParams(cfg, opts) {
   // Whatever genesis states beats it, and a table entry only shows up where
   // genesis is silent. Genesis reaches a key two ways, hence two passes; both
   // re-assign keys the spread already created, so key order stays the table's.
+  // Nethermind parses the genesis masternodes out of genesis.extraData only when
+  // SwitchBlock == 0; otherwise it reads engine params genesisMasternodes, which
+  // this converter has no source for and never writes
+  // (XdcChainSpecBasedSpecProvider.cs:101-112, defaulting to an empty array).
+  // The node then boots reporting the right genesis hash with no masternodes and
+  // no error, so this has to be caught here.
+  if (Number(pick(shared.switchBlock, 0)) !== 0) {
+    throw new Error(
+      `genesis states XDPoS.v2.switchBlock ${shared.switchBlock}; the converter ` +
+        'has no source for genesisMasternodes, which Nethermind requires then'
+    );
+  }
+
   if (shared.foundationWalletAddr === undefined) {
     throw new Error(
       'genesis states no XDPoS.foudationWalletAddr (nor foundationWalletAddr); ' +
