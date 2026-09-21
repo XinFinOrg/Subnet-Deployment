@@ -73,8 +73,11 @@
  *   genesis.config.tipXDCXMinerDisableBlock    -> engine.XDPoS.params.TIPXDCXMinerDisable
  *   genesis.config.tipXDCXReceiverDisableBlock -> engine.XDPoS.params.TIPXDCXReceiverDisable
  *
- *   genesis.{nonce,timestamp,extraData,gasLimit,difficulty,mixHash,
- *            coinbase,number,gasUsed,parentHash}  -> genesis.* (verbatim)
+ *   genesis.{timestamp,extraData,gasLimit,difficulty,parentHash}
+ *                                                 -> genesis.* (verbatim)
+ *   genesis.nonce, genesis.mixHash                -> genesis.seal.ethereum.*
+ *   genesis.coinbase                              -> genesis.author
+ *   genesis.number, genesis.gasUsed               -> dropped (no counterpart)
  *   genesis.baseFeePerGas (null)                  -> genesis.baseFeePerGas (DEFAULT_BASE_FEE_PER_GAS)
  *     no flag overrides this: XDPoSChain takes the same two steps in
  *     core/genesis.go (g.BaseFee, else params.InitialBaseFee), and a third
@@ -189,7 +192,6 @@ const DEFAULT_PARAMS = {
   eip145Transition: 0,
   eip1014Transition: 0,
   eip1052Transition: 0,
-  eip1234Transition: 999999999999,
   eip1283Transition: 0,
 
   // Istanbul
@@ -202,7 +204,6 @@ const DEFAULT_PARAMS = {
 
   // Berlin
   eip2565Transition: 999999999999,
-  eip2718Transition: 999999999999,
   eip2929Transition: 999999999999,
   eip2930Transition: 999999999999,
 
@@ -212,44 +213,25 @@ const DEFAULT_PARAMS = {
   eip3198Transition: 0,
   eip3529Transition: 999999999999,
   eip3541Transition: 999999999999,
-  eip3554Transition: 999999999999,
-
-  // Merge
-  eip4399Transition: 999999999999,
 
   // Shanghai
   eip3651Transition: 999999999999,
   eip3855Transition: 0,
   eip3860Transition: 999999999999,
-  eip6049Transition: 999999999999,
-  eip4895Transition: 999999999999,
 
   // Cancun
   eip1153Transition: 999999999999,
-  eip4788Transition: 999999999999,
   eip4844Transition: 999999999999,
   eip5656Transition: 999999999999,
   eip6780Transition: 999999999999,
-  eip7516Transition: 999999999999,
 
   // Prague
   eip2537Transition: 999999999999,
   eip2935Transition: 999999999999,
-  eip6110Transition: 999999999999,
-  eip7002Transition: 999999999999,
-  eip7251Transition: 999999999999,
   eip7702Transition: 999999999999,
   eip7623Transition: 999999999999,
 
   // Osaka
-  eip7594Transition: 999999999999,
-  eip7823Transition: 999999999999,
-  eip7825Transition: 999999999999,
-  eip7883Transition: 999999999999,
-  eip7918Transition: 999999999999,
-  eip7934Transition: 999999999999,
-  eip7939Transition: 999999999999,
-  eip7951Transition: 999999999999,
 
 
 };
@@ -423,7 +405,6 @@ const TRANSITION_FORKS = {
   eip1052Transition: ['constantinopleBlock', 'istanbulBlock', 'tipXDCXCancellationFeeBlock'],
   // block reward cut and difficulty-bomb delay: XDPoS pays its own rewards
   // (eth/hooks/engine_v2_hooks.go) and has no bomb to postpone
-  eip1234Transition: null,
   // net metered SSTORE, live only while IsConstantinople && !IsPetersburg
   // (core/vm/gas_table.go, gasSStore). Moot once enable2200 replaces SSTORE's
   // dynamic gas outright, which is why the reference spec can leave it on.
@@ -448,7 +429,6 @@ const TRANSITION_FORKS = {
   eip2565Transition: 'eip1559Block',
   // 2718: same txpool gate as 2930 below -- every non-legacy tx type is
   // rejected while !rules.IsEIP1559
-  eip2718Transition: 'eip1559Block',
   // 2929 + 2930: the access list is built in StateDB.Prepare, whose whole body
   // is behind `if rules.IsEIP1559` (core/state/statedb.go), and txpool rejects
   // every non-legacy tx type until IsEIP1559 (core/txpool/validation.go)
@@ -461,10 +441,6 @@ const TRANSITION_FORKS = {
   eip3198Transition: 'londonBlock',
   eip3529Transition: 'eip1559Block', // enable3529, newEip1559InstructionSet
   eip3541Transition: 'eip1559Block', // core/vm/evm.go: ret[0]==0xEF && IsEIP1559
-  eip3554Transition: null,           // another bomb delay, nothing to delay
-
-  // Merge
-  eip4399Transition: 'mergeBlock',   // PREVRANDAO, newMergeInstructionSet
 
   // Shanghai. Only PUSH0 is really gated on shanghaiBlock: enable3855 is the
   // sole entry in newShanghaiInstructionSet.
@@ -473,22 +449,12 @@ const TRANSITION_FORKS = {
   eip3855Transition: 'shanghaiBlock',
   // 3860: IntrinsicGas takes rules.IsEIP1559 as its isEIP3860 argument
   eip3860Transition: 'eip1559Block',
-  // announces SELFDESTRUCT's deprecation and changes no rule; nothing in
-  // XDPoSChain reads it
-  eip6049Transition: null,
-  // withdrawals: XDPoSChain's header type has no withdrawalsRoot, so Nethermind
-  // must not start expecting one
-  eip4895Transition: null,
 
   // Cancun
   eip1153Transition: 'cancunBlock',
-  // beacon-roots system call at the top of every block; XDPoSChain makes no
-  // such call and carries no parentBeaconBlockRoot
-  eip4788Transition: null,
   eip4844Transition: 'cancunBlock',
   eip5656Transition: 'cancunBlock',
   eip6780Transition: 'cancunBlock',
-  eip7516Transition: 'cancunBlock',  // BLOBBASEFEE, enable7516 in the Cancun set
 
   // Prague. XDPoSChain gates three EIPs on IsPrague: 2935 (history contract),
   // 7623 (calldata floor cost) and 7702 (setcode tx, the only opcode-level
@@ -497,34 +463,38 @@ const TRANSITION_FORKS = {
                              // no Prague case, it falls through to the
                              // EIP-1559 set
   eip2935Transition: 'pragueBlock',
-  eip6110Transition: null,   // beacon-chain EIPs; each would also put an
-  eip7002Transition: null,   // EIP-7685 requestsHash in the block header
-  eip7251Transition: null,
+                             // (6110/7002/7251, the beacon-chain EIPs, are not
+                             // emitted at all -- see the note below)
   eip7702Transition: 'pragueBlock',
   eip7623Transition: 'pragueBlock',
 
-  // Osaka is unreachable from a chainspec, so the whole fork is null. XDPoSChain
-  // does gate five of these on IsOsaka -- 7823 and 7883 (modexp input cap and
-  // repricing, in PrecompiledContractsOsaka), 7825 (tx gas cap, params.MaxTxGas),
-  // 7934 (RLP block size cap, params.MaxBlockSize) and 7939 (CLZ opcode:
-  // newOsakaInstructionSet is Prague plus enable7939) -- but Nethermind's XDC
-  // build declares EVERY Osaka EIP as eipNNNNTransitionTimestamp only, with no
-  // block-numbered eipNNNNTransition property to bind (verified against
-  // Nethermind.Specs.dll in nethermindeth/nethermind:xdc-fixes). A block value
-  // under those names is an unknown JSON member and is silently ignored, so
-  // emitting one would read as "Osaka is on" while Nethermind ran without it.
-  // See the osakaBlock warning in translate(): no chainspec can follow a Go node
+  // Osaka is unreachable from a chainspec, so no Osaka key is emitted at all.
+  // XDPoSChain does gate five of them on IsOsaka -- 7823 and 7883 (modexp input
+  // cap and repricing, in PrecompiledContractsOsaka), 7825 (tx gas cap,
+  // params.MaxTxGas), 7934 (RLP block size cap, params.MaxBlockSize) and 7939
+  // (CLZ opcode: newOsakaInstructionSet is Prague plus enable7939) -- but
+  // Nethermind's XDC build declares EVERY Osaka EIP as
+  // eipNNNNTransitionTimestamp only, with no block-numbered form to bind. See
+  // the osakaBlock warning in translate(): no chainspec can follow a Go node
   // into Osaka, EIP-7907's 32768-byte code limit included.
-  eip7594Transition: null,   // also not implemented: PeerDAS, no blobs here
-  eip7823Transition: null,
-  eip7825Transition: null,
-  eip7883Transition: null,
-  eip7918Transition: null,   // also not implemented: no blob header fields
-  eip7934Transition: null,
-  eip7939Transition: null,
-  eip7951Transition: null,   // also not implemented: P256VERIFY is not in
-                             // PrecompiledContractsOsaka
+
 };
+
+// Nineteen EIP transitions are deliberately NOT emitted, because Nethermind
+// binds no such key and a value under a name nothing reads is worse than no key
+// at all -- it reads as a decision that was never taken. Verified against
+// Nethermind.Specs ChainSpecParamsJson at master-4e36ba0:
+//
+//   no property in any form (6): eip1234, eip2718, eip3554, eip4399, eip6049,
+//     eip7516. eip1234 is the illustration -- IsEip1234Enabled derives from the
+//     Constantinople block, i.e. eip145Transition, which this converter defaults
+//     to 0, so it is on from block 0 no matter what sat beside it.
+//   declared only as eipNNNNTransitionTimestamp (13): eip4788, eip4895, eip6110,
+//     eip7002, eip7251, eip7594, eip7823, eip7825, eip7883, eip7918, eip7934,
+//     eip7939, eip7951. A block-numbered value under those names is an unknown
+//     JSON member and is silently ignored.
+//
+// Before adding one back, check it is a real ChainSpecParamsJson property.
 
 // The second way genesis reaches an engine param: a flat genesis.config key
 // whose name differs from the chainspec key. (The first is chain data that keeps
@@ -693,11 +663,12 @@ function buildEngineParams(cfg, opts) {
   const v2 = xdpos.v2 || {};
 
   // chain data, read the same way for both engines
+  // period and rewardCheckpoint are NOT carried: neither exists on
+  // XdcChainSpecEngineParameters, so both were dead keys. The mine period comes
+  // from v2Configs[].minePeriod, which is bound.
   const shared = {
-    period: xdpos.period,
     epoch: xdpos.epoch,
     reward: xdpos.reward,
-    rewardCheckpoint: xdpos.rewardCheckpoint,
     gap: xdpos.gap,
     // note: genesis spells the key "foudationWalletAddr" (sic)
     foundationWalletAddr: normalizeAddress(pick(xdpos.foudationWalletAddr, xdpos.foundationWalletAddr)),
@@ -846,17 +817,24 @@ function pickMaxCodeSize(cfg, maxCodeSizeTransition, paramDefaults, warn) {
 // base fee, which genesis.json leaves null.
 function buildGenesisBlock(genesis, opts) {
   return {
-    nonce: genesis.nonce,
+    // Nethermind reads the nonce and mixHash out of seal.ethereum, not off the
+    // genesis object: ChainSpecLoader.cs:356-357 takes
+    // Genesis.Seal?.Ethereum?.Nonce ?? 0 and ?.MixHash ?? Keccak.Zero, and
+    // ChainSpecGenesisJson declares neither at the top level. Emitting them
+    // there meant the node silently used 0 and Keccak.Zero instead.
+    seal: { ethereum: { nonce: genesis.nonce, mixHash: genesis.mixHash } },
+    // likewise the beneficiary: ChainSpecLoader.cs:369 reads Genesis.Author,
+    // and there is no "coinbase" on ChainSpecGenesisJson
+    author: normalizeAddress(genesis.coinbase),
     timestamp: genesis.timestamp,
     extraData: genesis.extraData,
     gasLimit: genesis.gasLimit,
     difficulty: genesis.difficulty,
-    mixHash: genesis.mixHash,
-    coinbase: genesis.coinbase,
-    number: genesis.number,
-    gasUsed: genesis.gasUsed,
     parentHash: genesis.parentHash,
     baseFeePerGas: pick(genesis.baseFeePerGas, DEFAULT_BASE_FEE_PER_GAS),
+    // number and gasUsed have no chainspec equivalent and are not emitted:
+    // genesis is always block 0 with no gas used, and ChainSpecLoader hardcodes
+    // the number to 0.
   };
 }
 
