@@ -261,59 +261,18 @@ const DEFAULT_PARAMS = {
 // supplies values only. So every key stays in step with DEFAULT_PARAMS
 // automatically and a subnet only has to state what it disagrees about.
 //
-// Nothing yet: a subnet and a standalone XDPoS network are running the same
-// XDPoSChain binary, so the same EIPs are gated on the same forks. Put an entry
-// here the moment a subnet needs to differ, e.g.
+// Nothing yet. The two run different Go clients -- a subnet runs
+// XinFinOrg/XDC-Subnet (xinfinorg/xdcsubnets), a standalone network runs
+// XinFinOrg/XDPoSChain (xinfinorg/devnet) -- but they gate the same EIPs on the
+// same genesis forks, so no entry is needed. Put one here the moment a subnet
+// needs to differ, e.g.
 //   eip1559Transition: 0,
+// Do NOT restate the whole table: the 999999999999 fallbacks are the invariant
+// that keeps a fork genesis never states switched off rather than on at 0.
 const DEFAULT_PARAMS_SUBNET = {
-  eip150Transition: 2,
-  eip155Transition: 3,
-  eip160Transition: 3,
-  eip145Transition: 0,
-  eip1014Transition: 0,
-  eip1052Transition: 0,
-  eip1234Transition: 999999999999,
-  eip1283Transition: 0,
-  eip152Transition: 0,
-  eip1108Transition: 0,
-  eip1344Transition: 0,
-  eip1884Transition: 0,
-  eip2028Transition: 999999999999,
-  eip2200Transition: 0,
-  eip2565Transition: 999999999999,
-  eip2718Transition: 999999999999,
-  eip2930Transition: 999999999999,
-  eip1559Transition: 999999999999,
-  eip2929Transition: 999999999999,
-  eip3198Transition: 0,
-  eip3529Transition: 999999999999,
-  eip3541Transition: 999999999999,
-  eip3554Transition: 999999999999,
-  eip4399Transition: 999999999999,
-  eip3651Transition: 999999999999,
-  eip3855Transition: 0,
-  eip3860Transition: 999999999999,
-  eip6049Transition: 999999999999,
-  eip1153Transition: 999999999999,
-  eip4844Transition: 999999999999,
-  eip5656Transition: 999999999999,
-  eip6780Transition: 999999999999,
-  eip7516Transition: 999999999999,
-  eip1559ElasticityMultiplier: '0x1',
-  eip7Transition: 1,
-  eip161abcTransition: 3,
-  eip161dTransition: 3,
-  eip140Transition: 4,
-  eip211Transition: 4,
-  eip214Transition: 4,
-  eip658Transition: 4,
-  MaxCodeSizeTransition: 3,
-  MaxCodeSize: 24576,
-  // Not in the reference spec, and not emitted under this name: pickMaxCodeSize
-  // reads it off whichever table is in play to decide the value of MaxCodeSize.
-  // Without it a subnet stating osakaBlock emits no MaxCodeSize at all.
-  MaxCodeSizeOsaka: 32768,
+  ...DEFAULT_PARAMS,
 };
+
 
 
 // Engine constants for what genesis.json does not state (copied from
