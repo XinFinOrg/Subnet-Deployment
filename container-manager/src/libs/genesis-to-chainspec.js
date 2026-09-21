@@ -729,12 +729,15 @@ function buildEngineParams(cfg, opts) {
 
   // XDC hardfork blocks carried straight through. Absent in genesis => absent
   // from the chainspec, so the fork stays off rather than activating at 0.
-  // These are XDPoS spellings; the subnet engine binds none of them, and the
-  // working subnet chainspec carries none.
-  if (!opts.subnet) {
-    for (const [key, genesisKey] of Object.entries(ENGINE_FORKS)) {
-      engineParams[key] = cfg[genesisKey];
-    }
+  // Emitted for BOTH engines: XdcSubnetChainSpecEngineParameters derives from
+  // XdcChainSpecEngineParameters and overrides only SealEngineType, so it
+  // inherits every one of these properties and binds them the same way.
+  // TIPUpgradeReward is why this matters -- Nethermind reads
+  // IsTipUpgradeRewardEnabled = (TipUpgradeReward ?? ulong.MaxValue) <=
+  // releaseStartBlock, so a dropped key is not "off", it is "never enabled",
+  // and the two clients then disagree at the first reward checkpoint.
+  for (const [key, genesisKey] of Object.entries(ENGINE_FORKS)) {
+    engineParams[key] = cfg[genesisKey];
   }
 
   return engineParams;
