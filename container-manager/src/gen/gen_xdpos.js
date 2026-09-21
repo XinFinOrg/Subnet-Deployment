@@ -450,7 +450,7 @@ function genXdposCompose(machine_id, num, start_num = 1) {
         command: [
           "--config=/work/xdc-nmc.json",
           "--datadir=/work/xdcchain",
-          "--log=info",
+          "--log=debug",
         ],
         profiles: [compose_profile],
         ports: port_mappings,
