@@ -8,7 +8,7 @@
     "AutoDump": "All"
   },
   "Network": {
-    "FilterPeersByRecentIp": false,
+    "FilterPeersByRecentIp": true,
     "FilterDiscoveryNodesByRecentIp": false,
     "EnableEnrDiscovery": false,
     "DisableDiscV4DnsFeeder": true
