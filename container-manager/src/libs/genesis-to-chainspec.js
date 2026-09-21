@@ -608,6 +608,59 @@ function normalizeAddress(addr) {
  * Builders — one per section of the chainspec
  * ------------------------------------------------------------------ */
 
+// Nethermind binds each v2Configs entry to V2ConfigParams, whose fields are
+// non-nullable value types with `init` accessors: an absent key binds to 0
+// rather than erroring, and its CheckConfig only validates that a
+// switchRound: 0 entry exists and that no round repeats
+// (XdcChainSpecEngineParameters.cs:109-118). So a field genesis omits is not
+// "unset", it is zero, and nothing downstream can tell the difference.
+//
+// What has to be present depends on which Go client the chainspec is paired
+// with, because the two declare different V2Configs:
+//
+//   XDPoS  -- XinFinOrg/XDPoSChain params/config_xdpos.go V2Config, 14 fields.
+//             A generated XDPoS genesis states all 14.
+//   Subnet -- XinFinOrg/XDC-Subnet params/config.go V2Config, 5 fields. The
+//             other nine do not exist on that client at all, so requiring them
+//             would reject every valid subnet genesis. maxMasternodes is
+//             required on top of the five because Nethermind's
+//             SubnetMasternodesCalculator reads it (spec.MaxMasternodes) and
+//             the converter injects it from DEFAULT_SUBNET_EXTRAS.
+//
+// The nine subnet-absent fields are safe at zero, but only because nothing on
+// the subnet path reads them: Nethermind registers SubnetPenaltyHandler
+// (XdcSubnetModule.cs:32), which uses the hardcoded
+// XdcConstants.MinimumMinerBlockPerEpoch = 1 rather than the spec value and
+// never touches LimitPenaltyEpoch or MinimumSigningTx, and XDC-Subnet hardcodes
+// the same 1 (common.MinimunMinerBlockPerEpoch, eth/hooks/engine_v2_hooks.go).
+// The reward and protector/observer cap fields are read only by
+// XdcRewardCalculator, and XDC-Subnet has no protector/observer tiers. If a
+// future subnet client gains any of those fields, move it into the subnet list.
+const V2_REQUIRED_FIELDS_XDPOS = [
+  'switchRound', 'maxMasternodes', 'maxProtectorNodes', 'maxObserverNodes',
+  'minePeriod', 'timeoutSyncThreshold', 'timeoutPeriod', 'certificateThreshold',
+  'masternodeReward', 'protectorReward', 'observerReward',
+  'minimumMinerBlockPerEpoch', 'limitPenaltyEpoch', 'minimumSigningTx',
+];
+
+const V2_REQUIRED_FIELDS_SUBNET = [
+  'switchRound', 'maxMasternodes', 'minePeriod', 'timeoutSyncThreshold',
+  'timeoutPeriod', 'certificateThreshold',
+];
+
+function checkV2Config(round, config, opts) {
+  const required = opts.subnet
+    ? V2_REQUIRED_FIELDS_SUBNET
+    : V2_REQUIRED_FIELDS_XDPOS;
+  const missing = required.filter((f) => config[f] === undefined);
+  if (missing.length) {
+    throw new Error(
+      `genesis XDPoS.v2.allConfigs[${round}] is missing ${missing.join(', ')}. ` +
+        'Nethermind would read 0 for each, diverging from the Go nodes.'
+    );
+  }
+}
+
 // engine.<name>.params.v2Configs: the per-round XDPoS V2 settings, in round
 // order. Every field is carried through as genesis states it, bar
 // expTimeoutConfig, which the chainspec schema has no key for and so is dropped
@@ -617,13 +670,14 @@ function buildV2Configs(v2, opts) {
     .sort((a, b) => Number(a) - Number(b))
     .map((round) => {
       const { expTimeoutConfig, ...rest } = v2.allConfigs[round];
-      if (!opts.subnet) {
-        return rest;
-      }
       // genesis carries no maxMasternodes on a subnet, but the working subnet
       // chainspec states it. Key spellings are left as genesis writes them --
       // the reference capitalises them, but binding is case-insensitive.
-      return { maxMasternodes: DEFAULT_SUBNET_EXTRAS.maxMasternodes, ...rest };
+      const config = opts.subnet
+        ? { maxMasternodes: DEFAULT_SUBNET_EXTRAS.maxMasternodes, ...rest }
+        : rest;
+      checkV2Config(round, config, opts);
+      return config;
     });
 }
 
@@ -861,7 +915,16 @@ function main(argv) {
     return 1;
   }
 
-  const chainspec = translate(genesis, opts);
+  // translate() throws on a genesis it cannot faithfully convert. Report that as
+  // a plain message and a non-zero exit, not an unhandled stack trace: this runs
+  // inside a container where the trace is all the operator would see.
+  let chainspec;
+  try {
+    chainspec = translate(genesis, opts);
+  } catch (e) {
+    console.error(`Error: cannot translate ${inPath}: ${e.message}`);
+    return 1;
+  }
   const json = JSON.stringify(chainspec, null, 2) + '\n';
   try {
     fs.writeFileSync(outPath, json);
