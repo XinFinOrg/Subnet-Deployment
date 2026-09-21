@@ -54,17 +54,19 @@
  *   as dead. The forks are unaffected: each is still carried by its
  *   EIP-numbered keys above.
  *
- *   genesis.config.XDPoS.period             -> engine.XDPoS.params.period
  *   genesis.config.XDPoS.epoch              -> engine.XDPoS.params.epoch
  *   genesis.config.XDPoS.reward             -> engine.XDPoS.params.reward
- *   genesis.config.XDPoS.rewardCheckpoint   -> engine.XDPoS.params.rewardCheckpoint
  *   genesis.config.XDPoS.gap                -> engine.XDPoS.params.gap
+ *   genesis.config.XDPoS.period and .rewardCheckpoint are NOT carried: neither
+ *   is a property of XdcChainSpecEngineParameters, so both were dead keys. The
+ *   mine period comes from v2Configs[].minePeriod, which is bound.
  *   genesis.config.XDPoS.foudationWalletAddr-> engine.XDPoS.params.foundationWalletAddr (typo fixed, lowercased)
  *   genesis.config.XDPoS.v2.switchEpoch     -> engine.XDPoS.params.switchEpoch (also accepts "SwitchEpoch")
  *   genesis.config.XDPoS.v2.switchBlock     -> engine.XDPoS.params.switchBlock (also accepts "SwitchBlock")
  *   genesis.config.XDPoS.v2.allConfigs.*    -> engine.XDPoS.params.v2Configs[]
- *     (TODO: the masternode/protector/observer reward amounts are zeroed, not
- *      carried — see translate())
+ *     (every field carried as genesis states it, bar expTimeoutConfig, which the
+ *      chainspec schema has no key for; checkV2Config() rejects a config missing
+ *      any field Nethermind would otherwise silently read as 0)
  *   genesis.config.tip2019Block                -> engine.XDPoS.params.tip2019Block
  *   genesis.config.dynamicGasLimitBlock        -> engine.XDPoS.params.DynamicGasLimitBlock
  *   genesis.config.tipXDCXBlock                -> engine.XDPoS.params.TipXDCX
