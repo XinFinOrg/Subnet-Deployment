@@ -68,7 +68,7 @@
  *   genesis.config.tip2019Block                -> engine.XDPoS.params.tip2019Block
  *   genesis.config.dynamicGasLimitBlock        -> engine.XDPoS.params.DynamicGasLimitBlock
  *   genesis.config.tipXDCXBlock                -> engine.XDPoS.params.TipXDCX
- *   genesis.config.denylistBlock               -> engine.XDPoS.params.blackListHFNumber
+ *   genesis.config.denylistBlock               -> engine.XDPoS.params.BlackListHFNumber
  *   genesis.config.tipTRC21FeeBlock            -> engine.XDPoS.params.TipTrc21Fee
  *   genesis.config.tipXDCXMinerDisableBlock    -> engine.XDPoS.params.TIPXDCXMinerDisable
  *   genesis.config.tipXDCXReceiverDisableBlock -> engine.XDPoS.params.TIPXDCXReceiverDisable
@@ -286,7 +286,7 @@ const DEFAULT_ENGINE = {
   tip2019Block: 1,
   DynamicGasLimitBlock: 9999999999999,
   TipXDCX: 9999999999999,
-  blackListHFNumber: 9999999999999,
+  BlackListHFNumber: 9999999999999,
   TipTrc21Fee: 99999999999999,
   TIPXDCXMinerDisable: 9999999999999,
   TIPXDCXReceiverDisable: 9999999999999,
@@ -528,27 +528,27 @@ const TRANSITION_FORKS = {
 
 // The second way genesis reaches an engine param: a flat genesis.config key
 // whose name differs from the chainspec key. (The first is chain data that keeps
-// its name, which translate() merges by name.) Per engine, chainspec key -> the
-// genesis.config key it comes from. The two engines bind
-// different names for the same thing, so the tables are separate rather than
-// one table with a rename step. A key here that is not in the matching
-// DEFAULT_ENGINE* table is emitted only when genesis states it.
+// its name, which translate() merges by name.) chainspec key -> the
+// genesis.config key it comes from.
+//
+// One table for both engines: XdcSubnetChainSpecEngineParameters inherits every
+// property of XdcChainSpecEngineParameters, and binding is case-insensitive, so
+// there is nothing to rename. The subnet table used to omit TipXDCX,
+// TIPXDCXMinerDisable and TIPXDCXReceiverDisable as "not used at all" -- all
+// three are bound, AddTransitions() uses them to create release-spec
+// boundaries, and IsTIPXDCXMiner / IsTIPXDCXReceiver are computed from them
+// (XdcChainSpecBasedSpecProvider.cs:80-81).
+//
+// A key here that is not in the matching DEFAULT_ENGINE* table is emitted only
+// when genesis states it.
 const ENGINE_GENESIS_KEYS = {
-  XDPoS: {
-    tip2019Block: 'tip2019Block',
-    DynamicGasLimitBlock: 'dynamicGasLimitBlock',
-    TipXDCX: 'tipXDCXBlock',
-    blackListHFNumber: 'denylistBlock',
-    TipTrc21Fee: 'tipTRC21FeeBlock',
-    TIPXDCXMinerDisable: 'tipXDCXMinerDisableBlock',
-    TIPXDCXReceiverDisable: 'tipXDCXReceiverDisableBlock',
-  },
-  XDPoSSubnet: {
-    DynamicGasLimitBlock: 'dynamicGasLimitBlock',
-    tip2019Block: 'tip2019Block',
-    BlackListHFNumber: 'denylistBlock',
-    TipTrc21Fee: 'tipTRC21FeeBlock',
-  },
+  tip2019Block: 'tip2019Block',
+  DynamicGasLimitBlock: 'dynamicGasLimitBlock',
+  TipXDCX: 'tipXDCXBlock',
+  BlackListHFNumber: 'denylistBlock',
+  TipTrc21Fee: 'tipTRC21FeeBlock',
+  TIPXDCXMinerDisable: 'tipXDCXMinerDisableBlock',
+  TIPXDCXReceiverDisable: 'tipXDCXReceiverDisableBlock',
 };
 
 // XDC hardfork blocks that live in engine.XDPoS.params rather than params.
@@ -651,9 +651,6 @@ function buildEngineParams(cfg, opts) {
   };
 
   const engineDefaults = opts.subnet ? DEFAULT_ENGINE_SUBNET : DEFAULT_ENGINE;
-  const engineGenesisKeys = opts.subnet
-    ? ENGINE_GENESIS_KEYS.XDPoSSubnet
-    : ENGINE_GENESIS_KEYS.XDPoS;
 
   // The whole default table is spread in rather than restated key by key: a
   // value belongs to exactly one place, the DEFAULT_ENGINE* table, which also
@@ -677,7 +674,7 @@ function buildEngineParams(cfg, opts) {
     }
   }
   // 2. flat genesis.config keys, which are named differently on each side
-  for (const [key, genesisKey] of Object.entries(engineGenesisKeys)) {
+  for (const [key, genesisKey] of Object.entries(ENGINE_GENESIS_KEYS)) {
     engineParams[key] = pick(cfg[genesisKey], engineDefaults[key]);
   }
 
