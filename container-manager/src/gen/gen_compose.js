@@ -50,7 +50,7 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
         command: [
           "--config=/work/xdc-nmc.json",
           "--datadir=/work/xdcchain",
-          "--log=debug",
+          "--log=info",
         ],
         profiles: [compose_profile],
         ports: port_mappings,
