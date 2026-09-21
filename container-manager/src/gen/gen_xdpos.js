@@ -178,6 +178,12 @@ function copyScripts(output_dir) {
     `${__dirname}/scripts/check-peer.sh`,
     `${output_dir}/scripts/check-peer.sh`
   );
+  // stop the containers and delete every xdcchain* data directory; prompts
+  // before it touches anything
+  fs.copyFileSync(
+    `${__dirname}/scripts/reset-chain.sh`,
+    `${output_dir}/scripts/reset-chain.sh`
+  );
   fs.copyFileSync(
     `${__dirname}/scripts/docker-up.sh`,
     `${output_dir}/docker-up.sh`

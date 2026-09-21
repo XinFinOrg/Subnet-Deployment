@@ -206,6 +206,12 @@ function copyScripts(output_dir) {
     `${__dirname}/scripts/add-node.sh`,
     `${output_dir}/scripts/add-node.sh`
   );
+  // stop the containers and delete every xdcchain* data directory; prompts
+  // before it touches anything
+  fs.copyFileSync(
+    `${__dirname}/scripts/reset-chain.sh`,
+    `${output_dir}/scripts/reset-chain.sh`
+  );
   // shared Nethermind config mounted by every nmc node, copied unconditionally
   // so it is always available (chainspec.json is produced separately from
   // genesis.json after puppeth runs). The subnet build differs from the
