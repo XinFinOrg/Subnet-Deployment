@@ -2,146 +2,68 @@
 /**
  * genesis-to-chainspec.js
  *
- * Translate a go-ethereum / XDC style `genesis.json` into the OpenEthereum /
- * Erigon style `chainspec.json` consumed by this network.
+ * Translate a go-ethereum / XDC style `genesis.json` into the chainspec.json
+ * Nethermind consumes. Self-contained: no external dependencies.
  *
  * Usage:
- *   node genesis-to-chainspec.js <genesis.json> <chainspec.json> [--name <chain-name>]
+ *   node genesis-to-chainspec.js <genesis.json> <chainspec.json> [--subnet] [--name <name>]
  *
- *   node genesis-to-chainspec.js ../genesis.json ../chainspec.json --name xdc-mine
- *
- * Both the input and the output path are required; there are no defaults.
- *
- * From the host, as a one-off container (paths are container paths;
- * /mount/generated is the host's ./generated directory):
+ * Both paths are required. --subnet names the engine block XDPoSSubnet instead
+ * of XDPoS; use it for a Subnet deployment, leave it off for a standalone XDPoS
+ * network. As a one-off container:
  *
  *   docker run --rm -v $PWD/generated:/mount/generated \
  *     xinfinorg/subnet-generator:<version> \
  *     npm run convert -- /mount/generated/genesis.json /mount/generated/chainspec.json
  *
- * Self-contained: no external dependencies.
- *
  * --------------------------------------------------------------------------
- * Every chainspec value that genesis.json can supply is read from it. The
- * DEFAULT_* tables below are fallbacks only: they apply when genesis says
- * nothing about a field.
+ * The one rule: genesis wins. Everything genesis.json can supply is read from
+ * it; the DEFAULT_* tables are fallbacks that apply only where genesis is
+ * silent. The tables below ARE the mapping -- read them, not a copy of them:
  *
- *   genesis.config.chainId          -> params.chainId
- *   genesis.config.homesteadBlock   -> params.eip7Transition
- *   genesis.config.eip150Block      -> params.eip150Transition
- *   genesis.config.eip155Block      -> params.eip155Transition
- *   genesis.config.eip158Block      -> params.eip160Transition, eip161abcTransition,
- *                                      eip161dTransition, MaxCodeSizeTransition
- *   genesis.config.byzantiumBlock   -> params.eip140Transition, eip211Transition,
- *                                      eip214Transition, eip658Transition
- *   the remaining EIP transitions come from the hardfork that ships them, see
- *   TRANSITION_FORKS: homesteadBlock, eip150Block, eip155Block, eip158Block,
- *   byzantiumBlock, constantinopleBlock, istanbulBlock, londonBlock, mergeBlock,
- *   shanghaiBlock, eip1559Block, cancunBlock, pragueBlock
- *   berlinBlock and osakaBlock feed nothing -- see TRANSITION_FORKS for why
+ *   TRANSITION_FORKS      genesis.config fork block -> params.eipNNNNTransition
+ *   ENGINE_GENESIS_KEYS   flat genesis.config key   -> engine param
+ *   ENGINE_FORKS          XDC hardfork block        -> engine param
+ *   DEFAULT_PARAMS        params values genesis cannot supply
+ *   DEFAULT_ENGINE(_SUBNET)  engine values genesis cannot supply
  *
- *   params deliberately carries no homesteadBlock, byzantiumBlock or
- *   eip158Transition. Those are geth-genesis spellings, not chainspec ones.
- *   Nethermind binds params to ChainSpecParamsJson, which declares
- *   eip7Transition, eip161abcTransition and eip161dTransition but none of those
- *   three: homesteadBlock and byzantiumBlock are properties of
- *   GethGenesisConfigJson, a separate class that reads a geth genesis.json, and
- *   ChainSpecParamsJson does not derive from it; eip158Transition exists on
- *   neither. Emitting them only put three keys in the chainspec that the node
- *   silently ignored. Verified against Nethermind.Specs.dll in
- *   nethermindeth/nethermind:xdc-fixes -- and Nethermind's own
- *   chainspec/xdc-testnet.json carries all three in params, where they are just
- *   as dead. The forks are unaffected: each is still carried by its
- *   EIP-numbered keys above.
+ * Four things the tables cannot say for themselves:
  *
- *   genesis.config.XDPoS.epoch              -> engine.XDPoS.params.epoch
- *   genesis.config.XDPoS.reward             -> engine.XDPoS.params.reward
- *   genesis.config.XDPoS.gap                -> engine.XDPoS.params.gap
- *   genesis.config.XDPoS.period and .rewardCheckpoint are NOT carried: neither
- *   is a property of XdcChainSpecEngineParameters, so both were dead keys. The
- *   mine period comes from v2Configs[].minePeriod, which is bound.
- *   genesis.config.XDPoS.foudationWalletAddr-> engine.XDPoS.params.foundationWalletAddr (typo fixed, lowercased)
- *   genesis.config.XDPoS.v2.switchEpoch     -> engine.XDPoS.params.switchEpoch (also accepts "SwitchEpoch")
- *   genesis.config.XDPoS.v2.switchBlock     -> engine.XDPoS.params.switchBlock (also accepts "SwitchBlock")
- *   genesis.config.XDPoS.v2.allConfigs.*    -> engine.XDPoS.params.v2Configs[]
- *     (every field carried as genesis states it, bar expTimeoutConfig, which the
- *      chainspec schema has no key for; checkV2Config() rejects a config missing
- *      any field Nethermind would otherwise silently read as 0)
- *   genesis.config.tip2019Block                -> engine.XDPoS.params.tip2019Block
- *   genesis.config.dynamicGasLimitBlock        -> engine.XDPoS.params.DynamicGasLimitBlock
- *   genesis.config.tipXDCXBlock                -> engine.XDPoS.params.TipXDCX
- *   genesis.config.denylistBlock               -> engine.XDPoS.params.BlackListHFNumber
- *   genesis.config.tipTRC21FeeBlock            -> engine.XDPoS.params.TipTrc21Fee
- *   genesis.config.tipXDCXMinerDisableBlock    -> engine.XDPoS.params.TIPXDCXMinerDisable
- *   genesis.config.tipXDCXReceiverDisableBlock -> engine.XDPoS.params.TIPXDCXReceiverDisable
+ * 1. Two different Go clients. A subnet runs XinFinOrg/XDC-Subnet
+ *    (xinfinorg/xdcsubnets); a standalone network runs XinFinOrg/XDPoSChain
+ *    (xinfinorg/devnet). They gate the same EIPs on the same genesis forks, so
+ *    params is identical, but their v2 configs differ -- see checkV2Config().
  *
- *   genesis.{timestamp,extraData,gasLimit,difficulty,parentHash}
- *                                                 -> genesis.* (verbatim)
- *   genesis.nonce, genesis.mixHash                -> genesis.seal.ethereum.*
- *   genesis.coinbase                              -> genesis.author
- *   genesis.number, genesis.gasUsed               -> dropped (no counterpart)
- *   genesis.baseFeePerGas (null)                  -> genesis.baseFeePerGas (DEFAULT_BASE_FEE_PER_GAS)
- *     no flag overrides this: XDPoSChain takes the same two steps in
- *     core/genesis.go (g.BaseFee, else params.InitialBaseFee), and a third
- *     value would simply change the genesis block hash
+ * 2. XDPoSChain does not follow the canonical Ethereum fork schedule. A group
+ *    Ethereum ships with Berlin/London/Shanghai -- 2565, 2929, 2930, 3529,
+ *    3541, 3651, 3860 -- is gated on EIP1559Block instead, alongside 1559
+ *    itself. EIP-2028 is not implemented at all. berlinBlock feeds nothing.
+ *    TRANSITION_FORKS carries the Go call site for each.
  *
- *   genesis.alloc  -> accounts (verbatim: code / storage / balance)
+ * 3. Two different "off" conventions. In params, a fork the chain does not run
+ *    falls back to 999999999999, a block no chain reaches, so it is emitted
+ *    visibly off rather than silently on at 0. (The eleven entries sitting at 0
+ *    are forks the chain genuinely runs from block 0.) ENGINE_FORKS has no
+ *    fallback at all and relies on the key being absent instead -- Nethermind
+ *    reads `(key ?? ulong.MaxValue) <= block`, so absent means never enabled.
  *
- * Not derivable from genesis, so always DEFAULT_ENGINE* / DEFAULT_PARAMS*:
- *   mergeSignRange, RangeReturnSigner, blackListedAddresses, the contract
- *   binaries (they live in XDC's common constants, not in genesis) and
- *   eip1559ElasticityMultiplier. maxCodeSize is a constant too, but which one
- *   depends on osakaBlock — see translate().
+ * 4. A key Nethermind does not bind is silently ignored, which is how a
+ *    chainspec can look correct and still diverge from the Go nodes. Every key
+ *    emitted here was checked against a real property on ChainSpecParamsJson,
+ *    ChainSpecGenesisJson or XdcChainSpecEngineParameters; the note above
+ *    ENGINE_GENESIS_KEYS lists what that test excluded and why.
  *
- * Present in genesis but with no counterpart in the chainspec schema, so
- * dropped rather than invented: v2 expTimeoutConfig, maxMasternodesV2,
- * SkipV1Validation, and the trc21IssuerSMC / xdcxListingSMC /
- * relayerRegistrationSMC / lendingRegistrationSMC addresses.
+ * Genesis block: timestamp, extraData, gasLimit, difficulty and parentHash go
+ * across verbatim. nonce and mixHash become genesis.seal.ethereum, coinbase
+ * becomes genesis.author, and number and gasUsed are dropped -- those are the
+ * shapes ChainSpecLoader actually reads. baseFeePerGas is null in genesis and
+ * concrete here: DEFAULT_BASE_FEE_PER_GAS is the value that makes the genesis
+ * hashes agree, not a preference.
  *
- *   genesis.config.tipSigningBlock             -> engine.XDPoS.params.TipSigningBlock
- *   genesis.config.tipRandomizeBlock           -> engine.XDPoS.params.TipRandomizeBlock
- *   genesis.config.tipIncreaseMasternodesBlock -> engine.XDPoS.params.TipIncreaseMasternodesBlock
- *   genesis.config.tipNoHalvingMNRewardBlock   -> engine.XDPoS.params.TipNoHalvingMNRewardBlock
- *   genesis.config.tipXDCXLendingBlock         -> engine.XDPoS.params.TipXDCXLendingBlock
- *   genesis.config.tipXDCXCancellationFeeBlock -> engine.XDPoS.params.TipXDCXCancellationFeeBlock
- *   genesis.config.gas50xBlock                 -> engine.XDPoS.params.Gas50xBlock
- *   genesis.config.tipUpgradeRewardBlock       -> engine.XDPoS.params.TIPUpgradeReward
- *   genesis.config.tipUpgradePenaltyBlock      -> engine.XDPoS.params.TIPUpgradePenalty
- *   (see ENGINE_FORKS; key spellings, TIP casing included, are Nethermind's)
- *
- * XDPoSChain does not follow the canonical Ethereum fork schedule, so neither
- * does this mapping. A group of EIPs that Ethereum ships with Berlin, London
- * and Shanghai — 2565, 2929, 2930, 3529, 3541, 3651, 3860 — is gated on
- * EIP1559Block in the Go client instead, alongside 1559 itself; EIP-2028 is not
- * implemented at all. TRANSITION_FORKS carries the reasoning per key, with the
- * Go call site for each.
- *
- * pragueBlock maps to only the EIPs XDPoSChain gates on IsPrague: 2935, 7623 and
- * 7702. The rest of Prague (BLS precompiles, the beacon-chain EIPs) is listed in
- * TRANSITION_FORKS as null and so comes out at DEFAULT_PARAMS' 999999999999:
- * present in the chainspec, visibly off, and impossible to switch on for
- * Nethermind alone by accident. Nethermind's own reference spec for Apothem
- * (/nethermind/chainspec/xdc-testnet.json) carries the same three transitions at
- * 83600000 and nothing else, and pre-allocates no EIP-2935 history contract, so
- * Nethermind supplies that contract itself; the transitions are all that is
- * needed.
- *
- * osakaBlock maps to no transition at all: Nethermind's XDC build declares every
- * Osaka EIP by timestamp only, with no block-numbered property to bind, so a
- * block-numbered chainspec cannot enter Osaka. The one part of Osaka a chainspec
- * can still carry is the code limit — maxCodeSize becomes 32768 when osakaBlock
- * is at or before maxCodeSizeTransition, since 32768 is then the only limit the
- * chain ever has. Everything else about Osaka is out of reach, so translate()
- * warns when genesis states an osakaBlock.
- *
- * Every params transition has a DEFAULT_PARAMS fallback of 999999999999, a
- * block no chain reaches, so a fork genesis does not state stays off rather
- * than silently activating at block 0. ENGINE_FORKS has no fallback at all and
- * relies on the key being absent instead. tipUpgradeRewardBlock is why that
- * matters — it selects between two different reward formulas
- * (eth/hooks/engine_v2_hooks.go, IsTIPUpgradeReward), so dropping it makes
- * XDPoSChain and Nethermind compute different balances at the first reward
- * checkpoint and the chain stalls there for good.
+ * Present in genesis with no chainspec counterpart, so dropped rather than
+ * invented: v2 expTimeoutConfig, maxMasternodesV2, SkipV1Validation, and the
+ * trc21IssuerSMC / xdcxListingSMC / relayerRegistrationSMC /
+ * lendingRegistrationSMC addresses.
  * --------------------------------------------------------------------------
  */
 
@@ -157,14 +79,14 @@ const path = require('path');
 
 const DEFAULT_CHAIN_NAME = 'xdpos-chain';
 
-// chainspec.genesis.baseFeePerGas is a concrete value while genesis.json has
-// null. Same number as XDPoSChain's params.InitialBaseFee (12.5 gwei), which is
-// what its core/genesis.go puts in the genesis header in that case -- so this
-// is not a preference, it is the value that makes the genesis hashes agree.
+// genesis.json has null here, the chainspec needs a concrete value. This is
+// params.InitialBaseFee (12500000000, 12.5 gwei), which is what core/genesis.go
+// puts in the header in that case -- not a preference, the value that makes the
+// genesis hashes agree.
 const DEFAULT_BASE_FEE_PER_GAS = '0x2e90edd00';
 
-// All EIP transitions in chainspec.params that don't come straight from
-// genesis.config. Values copied from the reference chainspec.json.
+// Fallback values for params. Every transition sits at 999999999999 unless the
+// chain genuinely runs it from block 0 -- see rule 3 in the header.
 const DEFAULT_PARAMS = {
   // Homestead
   eip7Transition: 1,
@@ -179,9 +101,9 @@ const DEFAULT_PARAMS = {
   eip155Transition: 999999999999,
   MaxCodeSizeTransition: 999999999999,
   MaxCodeSize: 24576,
-  // EIP-7907's raised limit (params.MaxCodeSizeOsaka in XDPoSChain). Never
-  // emitted under this name -- translate() picks it as the value of maxCodeSize
-  // when osakaBlock makes it the only limit the chain ever has.
+  // params.MaxCodeSizeOsaka. Never emitted under this name -- pickMaxCodeSize()
+  // uses it as the value of MaxCodeSize when osakaBlock makes it the only limit
+  // the chain ever has.
   MaxCodeSizeOsaka: 32768,
 
   // Byzantium
@@ -232,38 +154,23 @@ const DEFAULT_PARAMS = {
   eip2935Transition: 999999999999,
   eip7702Transition: 999999999999,
   eip7623Transition: 999999999999,
-
-  // Osaka
-
-
 };
 
 
-// Same, for a Subnet. Unlike the DEFAULT_ENGINE / DEFAULT_ENGINE_SUBNET pair
-// this one is a spread rather than a second full table, because the emitted key
-// set and key order come from TRANSITION_FORKS, not from here -- a params table
-// supplies values only. So every key stays in step with DEFAULT_PARAMS
-// automatically and a subnet only has to state what it disagrees about.
-//
-// Nothing yet. The two run different Go clients -- a subnet runs
-// XinFinOrg/XDC-Subnet (xinfinorg/xdcsubnets), a standalone network runs
-// XinFinOrg/XDPoSChain (xinfinorg/devnet) -- but they gate the same EIPs on the
-// same genesis forks, so no entry is needed. Put one here the moment a subnet
-// needs to differ, e.g.
-//   eip1559Transition: 0,
-// Do NOT restate the whole table: the 999999999999 fallbacks are the invariant
-// that keeps a fork genesis never states switched off rather than on at 0.
+// Same, for a Subnet. A spread, not a second table: both clients gate the same
+// EIPs on the same forks, so there is nothing to differ about yet. Add only the
+// keys a subnet disagrees about (e.g. `eip1559Transition: 0`) and never restate
+// the rest -- the 999999999999 fallbacks are the invariant from rule 3.
 const DEFAULT_PARAMS_SUBNET = {
   ...DEFAULT_PARAMS,
 };
 
 
 
-// Engine constants for what genesis.json does not state (copied from
-// chainspec.json). Spread into the engine block whole, so key order here is the
-// emitted order and every key here is emitted. These are fallbacks only:
-// anything genesis states wins, whether it arrives as chain data under the same
-// name or through the ENGINE_GENESIS_KEYS rename -- see translate().
+// Engine constants for what genesis.json does not state. Spread into the engine
+// block whole, so key order here is the emitted order and every key here is
+// emitted. Fallbacks only: anything genesis states wins, whether it arrives as
+// chain data under the same name or via ENGINE_GENESIS_KEYS.
 const DEFAULT_ENGINE = {
   mergeSignRange: 15,
   RangeReturnSigner: 150,
@@ -284,34 +191,24 @@ const DEFAULT_ENGINE = {
   XDCXLendingFinalizedTradeAddressBinary: '0x0000000000000000000000000000000000000094',
 };
 
-// The XDPoSSubnet engine plugin binds the SAME property names as XDPoS:
-// XdcSubnetChainSpecEngineParameters derives from XdcChainSpecEngineParameters
-// and overrides only SealEngineType (and the internal ResolveMinGasPrice), so
-// it inherits every property. Binding is case-insensitive, so the casing
-// differences below are cosmetic -- but a name that is not a property at all is
-// silently ignored and the engine's own default applies, which is how a
-// chainspec can look correct and still diverge from the Go nodes.
+// Same table for the subnet engine. XdcSubnetChainSpecEngineParameters derives
+// from XdcChainSpecEngineParameters and overrides only SealEngineType (and the
+// internal ResolveMinGasPrice), so it binds the same property names; the casing
+// differences below are cosmetic, since binding is case-insensitive.
 //
-// Most entries here switch a fork off. The two that switch one ON were checked
-// against XinFinOrg/XDC-Subnet, the client a subnet actually runs, rather than
-// copied from a deployment that happened to work:
+// Most entries switch a fork off. The two that switch one ON were checked
+// against XDC-Subnet, the client a subnet actually runs, not copied from a
+// deployment that happened to work. Both are on from block 1 on both sides:
 //
-//   tip2019Block: 1 -- Nethermind computes IsTIP2019 = TIP2019Block <=
-//     releaseStartBlock (XdcChainSpecBasedSpecProvider.cs:79), so on from block
-//     1. XDC-Subnet hardcodes common.TIP2019Block = 1 and tests isForked()
-//     against it, so also from block 1. They agree.
-//   TipTrc21Fee: 1 -- Nethermind computes IsTipTrc21FeeEnabled =
-//     (TipTrc21Fee ?? ulong.MaxValue) <= releaseStartBlock (:77), so on from
-//     block 1. XDC-Subnet hardcodes common.TIPTRC21Fee = 0 but tests it
-//     STRICTLY -- core/state_transition.go:271 is
-//     `if st.evm.BlockNumber.Cmp(common.TIPTRC21Fee) > 0` -- so it is live from
-//     block 1 too. They agree. This one is read by the transaction-execution
-//     path (XdcTransactionProcessor), so do not "correct" the 1 to 0 to match
-//     the Go constant: that would enable it a block early.
+//   tip2019Block: 1  Nethermind: IsTIP2019 = TIP2019Block <= releaseStartBlock
+//     (XdcChainSpecBasedSpecProvider.cs:79). Go: common.TIP2019Block = 1.
+//   TipTrc21Fee: 1   Nethermind: (TipTrc21Fee ?? MaxValue) <= releaseStartBlock
+//     (:77). Go: common.TIPTRC21Fee = 0, but tested STRICTLY --
+//     `BlockNumber.Cmp(common.TIPTRC21Fee) > 0` (core/state_transition.go:271).
+//     Do NOT "correct" this to 0 to match the Go constant: the strict test means
+//     0 would enable it a block early, on the transaction-execution path.
 //
-// Key order is the emitted order: translate() spreads this table into the
-// engine block whole, so a key is added, removed or moved here and nowhere
-// else. Fallbacks only, as with DEFAULT_ENGINE -- genesis always wins.
+// Key order is the emitted order. Fallbacks only -- genesis always wins.
 const DEFAULT_ENGINE_SUBNET = {
   MergeSignRange: 15,
   RangeReturnSigner: 150,
@@ -333,11 +230,9 @@ const DEFAULT_ENGINE_SUBNET = {
   switchEpoch: 0,
 };
 
-// A subnet value that is NOT an engine param, so it is kept out of the table
-// above: that table is spread into the engine block wholesale and anything in it
-// is emitted, whereas maxMasternodes goes inside each v2Configs entry. genesis
-// allConfigs carries none; this is XDC's own default and what the working subnet
-// chainspec states explicitly.
+// Kept out of the table above because that one is spread into the engine block
+// wholesale, whereas maxMasternodes belongs inside each v2Configs entry. A
+// subnet genesis states none; 108 is XDC's own default (common.MaxMasternodes).
 const DEFAULT_SUBNET_EXTRAS = {
   maxMasternodes: 108,
 };
@@ -348,50 +243,37 @@ const DEFAULT_SUBNET_EXTRAS = {
  * ------------------------------------------------------------------ */
 
 
-// Which hardfork block in genesis.config activates each chainspec transition.
-// One entry per DEFAULT_PARAMS transition key, same order and same fork
-// headings, so the two tables read side by side. Order matters twice over: it
-// is also the key order of the generated params object.
+// Which genesis.config fork block activates each params transition. Key order
+// here is the emitted key order, and mirrors DEFAULT_PARAMS.
 //
-//   'someBlock' = genesis.config.someBlock activates the EIP; when genesis does
-//                 not state that fork, the DEFAULT_PARAMS entry stands in.
-//   [a, b, ...]  = more than one genesis key activates it, whichever states the
-//                 earliest block. XDPoSChain has forks that are reached two
-//                 ways: IsIstanbul is
-//                 `isForked(TIPXDCXCancellationFeeBlock) || isForked(IstanbulBlock)`
-//                 (params/config_forks.go), a compatibility path for older XDC
-//                 configs that never set istanbulBlock -- Apothem is one, and it
-//                 runs Istanbul from tipXDCXCancellationFeeBlock.
-//   null        = no genesis fork may activate it. XDPoSChain does not
-//                 implement the EIP, so the DEFAULT_PARAMS never-block
-//                 (999999999999) always stands and the key is emitted
-//                 explicitly off. Turning one of these on for Nethermind alone
-//                 is exactly the state-root (or block-header) divergence this
-//                 mapping exists to prevent: the Go nodes would compute
-//                 something else and the chain would stall at the first block
-//                 that touches it.
+//   'someBlock'  genesis.config.someBlock activates it; if genesis does not
+//                state that fork, the DEFAULT_PARAMS entry stands in.
+//   [a, b, ...]  several keys can activate it -- whichever states the earliest
+//                block wins, because Go ORs the isForked() checks. IsIstanbul
+//                is `isForked(TIPXDCXCancellationFeeBlock) || isForked(
+//                IstanbulBlock)` (params/config_forks.go:79), a compatibility
+//                path for older XDC configs that never set istanbulBlock.
+//   null         XDPoSChain does not implement it, so the never-block stands
+//                and the key is emitted visibly off. Switching one of these on
+//                for Nethermind alone is the state-root divergence this mapping
+//                exists to prevent.
 //
-// The null verdicts were read off XDPoSChain itself, not off the EIP list:
-// core/vm/jump_table.go for the per-fork instruction sets, core/vm/contracts.go
-// for the precompile sets, and the Is<Fork> call sites; then cross-checked
-// against the chainspec Nethermind ships for Apothem (chainspec/xdc-testnet.json
-// in the image), which is the same mapping with real block numbers on it.
+// The null verdicts come from XDPoSChain itself -- core/vm/jump_table.go for the
+// instruction sets, core/vm/contracts.go for the precompiles, and the Is<Fork>
+// call sites -- cross-checked against the spec Nethermind ships for Apothem
+// (src/Nethermind/Chains/xdc-testnet.json), the same mapping with real blocks.
 //
-// Watch for 'eip1559Block' below. XDPoSChain does NOT follow the canonical
-// Ethereum fork schedule: core/vm/evm.go picks ONE instruction set by a switch
-// on chainRules, and newEip1559InstructionSet is Shanghai plus 2929, 3529 and
-// 3860 -- newBerlinInstructionSet has its enable2929 commented out. So a whole
-// group of Berlin/London/Shanghai EIPs really activates at EIP1559Block
-// (params/config_forks.go: IsEIP1559 is isForked(c.EIP1559Block, num), nothing
-// else feeds it). Apothem is the proof: berlin = london = merge = shanghai =
-// 61290000 but eip1559Block = 71550000, and xdc-testnet.json puts eip1559,
-// 2929, 3529 and 3860 together on 71550000.
+// Watch 'eip1559Block'. core/vm/evm.go picks ONE instruction set by a switch on
+// chainRules, and newEip1559InstructionSet is Shanghai plus 2929, 3529 and 3860
+// (jump_table.go:115) while newBerlinInstructionSet has its enable2929
+// commented out (:152). So that whole group really activates at EIP1559Block.
+// Apothem proves it: london = shanghai = 61290000 but eip1559Block = 71550000,
+// and xdc-testnet.json puts eip1559, 2929, 3529 and 3860 together on 71550000.
 const TRANSITION_FORKS = {
-  // Chain identity. Not a transition, but it is read out of genesis.config
-  // exactly like one, so keeping it here lets params be built in a single pass
-  // with no hand-written head. It has no DEFAULT_PARAMS* entry: a chainspec
-  // should not invent a chain id, and pick() leaving it undefined drops the
-  // key, which is what we want.
+  // Not a transition, but read out of genesis.config exactly like one, so
+  // keeping it here lets params be built in a single pass. No DEFAULT_PARAMS
+  // entry on purpose: a chainspec must not invent a chain id, and pick()
+  // leaving it undefined drops the key.
   chainId: 'chainId',
 
   // Homestead
@@ -405,8 +287,8 @@ const TRANSITION_FORKS = {
   eip161abcTransition: 'eip158Block',
   eip161dTransition: 'eip158Block',
   eip155Transition: 'eip155Block',
-  // EIP-170. The limit itself is a constant, not a transition, so translate()
-  // emits maxCodeSize straight from DEFAULT_PARAMS alongside this.
+  // EIP-170. The limit itself is a constant, not a transition -- buildParams()
+  // emits MaxCodeSize alongside this.
   MaxCodeSizeTransition: 'eip158Block',
 
   // Byzantium
@@ -422,8 +304,6 @@ const TRANSITION_FORKS = {
   eip145Transition: ['constantinopleBlock', 'istanbulBlock', 'tipXDCXCancellationFeeBlock'],
   eip1014Transition: ['constantinopleBlock', 'istanbulBlock', 'tipXDCXCancellationFeeBlock'],
   eip1052Transition: ['constantinopleBlock', 'istanbulBlock', 'tipXDCXCancellationFeeBlock'],
-  // block reward cut and difficulty-bomb delay: XDPoS pays its own rewards
-  // (eth/hooks/engine_v2_hooks.go) and has no bomb to postpone
   // net metered SSTORE, live only while IsConstantinople && !IsPetersburg
   // (core/vm/gas_table.go, gasSStore). Moot once enable2200 replaces SSTORE's
   // dynamic gas outright, which is why the reference spec can leave it on.
@@ -436,9 +316,9 @@ const TRANSITION_FORKS = {
   eip1884Transition: ['istanbulBlock', 'tipXDCXCancellationFeeBlock'],
   // 2028 is NOT implemented: IntrinsicGas charges the flat
   // params.TxDataNonZeroGas = 68, and TxDataNonZeroGasEIP2028 = 16 is declared
-  // in params/protocol_params.go and referenced nowhere in the tree. Nethermind
-  // at 16 gas per non-zero byte would misprice every call with calldata.
-  // xdc-testnet.json agrees: 999999999999 while the rest of Istanbul is live.
+  // in params/protocol_params.go and referenced nowhere else in the tree.
+  // Nethermind at 16 gas per non-zero byte would misprice every call with
+  // calldata. xdc-testnet.json omits the key entirely, with Istanbul live.
   eip2028Transition: null,
   eip2200Transition: ['istanbulBlock', 'tipXDCXCancellationFeeBlock'],
 
@@ -446,8 +326,6 @@ const TRANSITION_FORKS = {
   // 2565: PrecompiledContractsXDCv2 still has eip2565:false; the first set that
   // turns it on is PrecompiledContractsEIP1559 (core/vm/contracts.go)
   eip2565Transition: 'eip1559Block',
-  // 2718: same txpool gate as 2930 below -- every non-legacy tx type is
-  // rejected while !rules.IsEIP1559
   // 2929 + 2930: the access list is built in StateDB.Prepare, whose whole body
   // is behind `if rules.IsEIP1559` (core/state/statedb.go), and txpool rejects
   // every non-legacy tx type until IsEIP1559 (core/txpool/validation.go)
@@ -482,54 +360,40 @@ const TRANSITION_FORKS = {
                              // no Prague case, it falls through to the
                              // EIP-1559 set
   eip2935Transition: 'pragueBlock',
-                             // (6110/7002/7251, the beacon-chain EIPs, are not
-                             // emitted at all -- see the note below)
   eip7702Transition: 'pragueBlock',
   eip7623Transition: 'pragueBlock',
 
-  // Osaka is unreachable from a chainspec, so no Osaka key is emitted at all.
-  // XDPoSChain does gate five of them on IsOsaka -- 7823 and 7883 (modexp input
-  // cap and repricing, in PrecompiledContractsOsaka), 7825 (tx gas cap,
-  // params.MaxTxGas), 7934 (RLP block size cap, params.MaxBlockSize) and 7939
-  // (CLZ opcode: newOsakaInstructionSet is Prague plus enable7939) -- but
-  // Nethermind's XDC build declares EVERY Osaka EIP as
-  // eipNNNNTransitionTimestamp only, with no block-numbered form to bind. See
-  // the osakaBlock warning in translate(): no chainspec can follow a Go node
-  // into Osaka, EIP-7907's 32768-byte code limit included.
-
+  // Osaka is unreachable from a chainspec, so no Osaka key is emitted. XDPoSChain
+  // does gate five EIPs on IsOsaka (7823, 7825, 7883, 7934, 7939), but
+  // Nethermind declares every one of them as eipNNNNTransitionTimestamp only,
+  // with no block-numbered form to bind. pickMaxCodeSize() warns about this;
+  // maxCodeSize is the only piece of Osaka a chainspec can carry at all.
 };
 
-// Nineteen EIP transitions are deliberately NOT emitted, because Nethermind
-// binds no such key and a value under a name nothing reads is worse than no key
-// at all -- it reads as a decision that was never taken. Verified against
-// Nethermind.Specs ChainSpecParamsJson at master-4e36ba0:
+// Nineteen transitions are deliberately absent: Nethermind binds no such key,
+// and a value under a name nothing reads is worse than no key -- it reads as a
+// decision that was never taken. Checked against ChainSpecParamsJson at
+// master-4e36ba0:
 //
 //   no property in any form (6): eip1234, eip2718, eip3554, eip4399, eip6049,
-//     eip7516. eip1234 is the illustration -- IsEip1234Enabled derives from the
-//     Constantinople block, i.e. eip145Transition, which this converter defaults
-//     to 0, so it is on from block 0 no matter what sat beside it.
+//     eip7516. eip1234 shows why it matters -- IsEip1234Enabled derives from the
+//     Constantinople block (eip145Transition, which defaults to 0 here), so it
+//     is on from block 0 whatever sat beside it.
 //   declared only as eipNNNNTransitionTimestamp (13): eip4788, eip4895, eip6110,
 //     eip7002, eip7251, eip7594, eip7823, eip7825, eip7883, eip7918, eip7934,
-//     eip7939, eip7951. A block-numbered value under those names is an unknown
-//     JSON member and is silently ignored.
+//     eip7939, eip7951 -- a block-numbered value there is an unknown JSON
+//     member and is silently ignored.
 //
 // Before adding one back, check it is a real ChainSpecParamsJson property.
 
 // The second way genesis reaches an engine param: a flat genesis.config key
 // whose name differs from the chainspec key. (The first is chain data that keeps
-// its name, which translate() merges by name.) chainspec key -> the
-// genesis.config key it comes from.
+// its name, which buildEngineParams() merges by name.)
 //
-// One table for both engines: XdcSubnetChainSpecEngineParameters inherits every
-// property of XdcChainSpecEngineParameters, and binding is case-insensitive, so
-// there is nothing to rename. The subnet table used to omit TipXDCX,
-// TIPXDCXMinerDisable and TIPXDCXReceiverDisable as "not used at all" -- all
-// three are bound, AddTransitions() uses them to create release-spec
-// boundaries, and IsTIPXDCXMiner / IsTIPXDCXReceiver are computed from them
-// (XdcChainSpecBasedSpecProvider.cs:80-81).
-//
-// A key here that is not in the matching DEFAULT_ENGINE* table is emitted only
-// when genesis states it.
+// One table for both engines -- XdcSubnetChainSpecEngineParameters inherits
+// every property of XdcChainSpecEngineParameters and binding is
+// case-insensitive, so there is nothing to rename. A key here that has no entry
+// in the matching DEFAULT_ENGINE* table is emitted only when genesis states it.
 const ENGINE_GENESIS_KEYS = {
   tip2019Block: 'tip2019Block',
   DynamicGasLimitBlock: 'dynamicGasLimitBlock',
@@ -540,14 +404,13 @@ const ENGINE_GENESIS_KEYS = {
   TIPXDCXReceiverDisable: 'tipXDCXReceiverDisableBlock',
 };
 
-// XDC hardfork blocks that live in engine.XDPoS.params rather than params.
-// Key = chainspec key, value = genesis.config key. The key spellings come from
-// Nethermind's own reference specs (/nethermind/chainspec/xdc.json and
-// xdc-testnet.json) — note TIPUpgradeReward/TIPUpgradePenalty use all-caps TIP
-// and, unlike the rest, carry no "Block" suffix. Binding is case-insensitive,
-// but matching the reference keeps generated and reference specs diffable.
+// XDC hardfork blocks, which live in the engine block rather than params.
+// Spellings match Nethermind's reference specs (src/Nethermind/Chains/xdc.json)
+// -- note TIPUpgradeReward and TIPUpgradePenalty take all-caps TIP and no
+// "Block" suffix. Binding is case-insensitive; matching the reference just keeps
+// generated and reference specs diffable.
 //
-// No defaults here on purpose — see the header note on ENGINE_FORKS.
+// No defaults here on purpose -- see rule 3 in the header.
 const ENGINE_FORKS = {
   TipSigningBlock: 'tipSigningBlock',
   TipRandomizeBlock: 'tipRandomizeBlock',
@@ -587,12 +450,11 @@ function pick(...candidates) {
   return undefined;
 }
 
-// Lowercase, 0x-prefixed. Clients accept this fine; we don't bother with the
-// cosmetic EIP-55 mixed-case checksum.
+// Lowercase, 0x-prefixed; the cosmetic EIP-55 checksum is not worth the bother.
+// Absent stays absent -- without that guard String(undefined) makes the literal
+// "0xundefined", which Nethermind rejects at load with "hex string of odd
+// length", an error naming neither the field nor the file.
 function normalizeAddress(addr) {
-  // Absent stays absent. Without this, String(undefined) makes the literal
-  // "0xundefined", which Nethermind rejects at load with "hex string of odd
-  // length" -- an error that names neither the field nor the file.
   if (addr === undefined || addr === null) return undefined;
   return '0x' + String(addr).toLowerCase().replace(/^0x/, '');
 }
@@ -602,33 +464,25 @@ function normalizeAddress(addr) {
  * ------------------------------------------------------------------ */
 
 // Nethermind binds each v2Configs entry to V2ConfigParams, whose fields are
-// non-nullable value types with `init` accessors: an absent key binds to 0
-// rather than erroring, and its CheckConfig only validates that a
-// switchRound: 0 entry exists and that no round repeats
+// non-nullable value types with `init` accessors, and its CheckConfig validates
+// only that a switchRound: 0 entry exists and that no round repeats
 // (XdcChainSpecEngineParameters.cs:109-118). So a field genesis omits is not
-// "unset", it is zero, and nothing downstream can tell the difference.
+// "unset", it is 0, and nothing downstream can tell the difference.
 //
-// What has to be present depends on which Go client the chainspec is paired
-// with, because the two declare different V2Configs:
+// What must be present depends on the Go client, which declare different
+// V2Configs: XDPoSChain's has 14 fields (params/config_xdpos.go) and a generated
+// XDPoS genesis states all 14; XDC-Subnet's has 5 (params/config.go), so
+// requiring the other nine would reject every valid subnet genesis.
+// maxMasternodes is required on top of those 5 because
+// SubnetMasternodesCalculator reads it and the converter injects it.
 //
-//   XDPoS  -- XinFinOrg/XDPoSChain params/config_xdpos.go V2Config, 14 fields.
-//             A generated XDPoS genesis states all 14.
-//   Subnet -- XinFinOrg/XDC-Subnet params/config.go V2Config, 5 fields. The
-//             other nine do not exist on that client at all, so requiring them
-//             would reject every valid subnet genesis. maxMasternodes is
-//             required on top of the five because Nethermind's
-//             SubnetMasternodesCalculator reads it (spec.MaxMasternodes) and
-//             the converter injects it from DEFAULT_SUBNET_EXTRAS.
-//
-// The nine subnet-absent fields are safe at zero, but only because nothing on
-// the subnet path reads them: Nethermind registers SubnetPenaltyHandler
-// (XdcSubnetModule.cs:32), which uses the hardcoded
-// XdcConstants.MinimumMinerBlockPerEpoch = 1 rather than the spec value and
-// never touches LimitPenaltyEpoch or MinimumSigningTx, and XDC-Subnet hardcodes
-// the same 1 (common.MinimunMinerBlockPerEpoch, eth/hooks/engine_v2_hooks.go).
-// The reward and protector/observer cap fields are read only by
-// XdcRewardCalculator, and XDC-Subnet has no protector/observer tiers. If a
-// future subnet client gains any of those fields, move it into the subnet list.
+// Those nine are safe at 0 on a subnet only because nothing reads them there:
+// Nethermind registers SubnetPenaltyHandler (XdcSubnetModule.cs:32), which uses
+// a hardcoded MinimumMinerBlockPerEpoch of 1 and never touches LimitPenaltyEpoch
+// or MinimumSigningTx, and XDC-Subnet hardcodes the same 1. The reward and
+// protector/observer cap fields are read only by XdcRewardCalculator, and
+// XDC-Subnet has no protector/observer tiers. If a future subnet client gains
+// any of them, move it into the subnet list.
 const V2_REQUIRED_FIELDS_XDPOS = [
   'switchRound', 'maxMasternodes', 'maxProtectorNodes', 'maxObserverNodes',
   'minePeriod', 'timeoutSyncThreshold', 'timeoutPeriod', 'certificateThreshold',
@@ -654,18 +508,14 @@ function checkV2Config(round, config, opts) {
   }
 }
 
-// engine.<name>.params.v2Configs: the per-round XDPoS V2 settings, in round
-// order. Every field is carried through as genesis states it, bar
-// expTimeoutConfig, which the chainspec schema has no key for and so is dropped
-// rather than invented.
+// The per-round XDPoS V2 settings, in round order. Every field is carried as
+// genesis states it, bar expTimeoutConfig, which has no chainspec key.
 function buildV2Configs(v2, opts) {
   return Object.keys(v2.allConfigs || {})
     .sort((a, b) => Number(a) - Number(b))
     .map((round) => {
       const { expTimeoutConfig, ...rest } = v2.allConfigs[round];
-      // genesis carries no maxMasternodes on a subnet, but the working subnet
-      // chainspec states it. Key spellings are left as genesis writes them --
-      // the reference capitalises them, but binding is case-insensitive.
+      // a subnet genesis carries no maxMasternodes, but the chainspec needs it
       const config = opts.subnet
         ? { maxMasternodes: DEFAULT_SUBNET_EXTRAS.maxMasternodes, ...rest }
         : rest;
@@ -674,17 +524,16 @@ function buildV2Configs(v2, opts) {
     });
 }
 
-// engine.XDPoS.params, or engine.XDPoSSubnet.params with opts.subnet. Which
-// default table and which genesis-key map apply is the only difference between
-// the two engines here; the engine block is named by translate().
+// engine.XDPoS.params, or engine.XDPoSSubnet.params with opts.subnet. The
+// default table is the only difference between the two engines here; translate()
+// names the block.
 function buildEngineParams(cfg, opts) {
   const xdpos = cfg.XDPoS || {};
   const v2 = xdpos.v2 || {};
 
-  // chain data, read the same way for both engines
-  // period and rewardCheckpoint are NOT carried: neither exists on
-  // XdcChainSpecEngineParameters, so both were dead keys. The mine period comes
-  // from v2Configs[].minePeriod, which is bound.
+  // Chain data, read the same way for both engines. period and rewardCheckpoint
+  // are NOT carried: neither is a property of XdcChainSpecEngineParameters. The
+  // mine period comes from v2Configs[].minePeriod, which is bound.
   const shared = {
     epoch: xdpos.epoch,
     reward: xdpos.reward,
@@ -698,24 +547,14 @@ function buildEngineParams(cfg, opts) {
     v2Configs: buildV2Configs(v2, opts),
   };
 
-  const engineDefaults = opts.subnet ? DEFAULT_ENGINE_SUBNET : DEFAULT_ENGINE;
+  // Two things the converter cannot express, so it refuses rather than emit a
+  // chainspec that looks right and silently disagrees with the Go nodes.
 
-  // The whole default table is spread in rather than restated key by key: a
-  // value belongs to exactly one place, the DEFAULT_ENGINE* table, which also
-  // fixes the emitted key order. Adding a constant there is all it takes to have
-  // it emitted -- the older hand-copied version silently dropped any key whose
-  // assignment nobody remembered to write out.
-  //
-  // One rule for what follows: the table is a fallback, never a winner.
-  // Whatever genesis states beats it, and a table entry only shows up where
-  // genesis is silent. Genesis reaches a key two ways, hence two passes; both
-  // re-assign keys the spread already created, so key order stays the table's.
-  // Nethermind parses the genesis masternodes out of genesis.extraData only when
-  // SwitchBlock == 0; otherwise it reads engine params genesisMasternodes, which
-  // this converter has no source for and never writes
+  // Nethermind reads the genesis masternodes out of genesis.extraData only when
+  // SwitchBlock == 0; otherwise it reads the engine param genesisMasternodes,
+  // which this converter has no source for and never writes
   // (XdcChainSpecBasedSpecProvider.cs:101-112, defaulting to an empty array).
-  // The node then boots reporting the right genesis hash with no masternodes and
-  // no error, so this has to be caught here.
+  // The node would boot on the right genesis hash with no validator set.
   if (Number(pick(shared.switchBlock, 0)) !== 0) {
     throw new Error(
       `genesis states XDPoS.v2.switchBlock ${shared.switchBlock}; the converter ` +
@@ -723,6 +562,8 @@ function buildEngineParams(cfg, opts) {
     );
   }
 
+  // normalizeAddress() returns undefined for an absent address, which would
+  // drop the key; Nethermind has no default for it and fails to load.
   if (shared.foundationWalletAddr === undefined) {
     throw new Error(
       'genesis states no XDPoS.foudationWalletAddr (nor foundationWalletAddr); ' +
@@ -730,31 +571,29 @@ function buildEngineParams(cfg, opts) {
     );
   }
 
+  // The default table is spread in whole rather than restated key by key, so a
+  // value lives in exactly one place and the table fixes the emitted key order.
+  // It is a fallback, never a winner: both passes below re-assign keys the
+  // spread already created, so genesis always beats it and key order holds.
+  const engineDefaults = opts.subnet ? DEFAULT_ENGINE_SUBNET : DEFAULT_ENGINE;
   const engineParams = { ...shared, ...engineDefaults };
 
-  // 1. chain data off genesis.config.XDPoS, which keeps its name. A table key of
-  //    the same name (e.g. switchEpoch) backstops it rather than overwriting it:
-  //    the raw spread alone would let the constant win and silently replace, say,
-  //    a switchEpoch of 900 with 0, putting the two clients on different epochs.
+  // 1. chain data, which keeps its genesis name. A table key of the same name
+  //    (e.g. switchEpoch) backstops it rather than overwriting it -- the raw
+  //    spread alone would let the constant replace a stated switchEpoch of 900
+  //    with 0, putting the two clients on different epochs.
   for (const key of Object.keys(engineDefaults)) {
     if (key in shared) {
       engineParams[key] = pick(shared[key], engineDefaults[key]);
     }
   }
-  // 2. flat genesis.config keys, which are named differently on each side
+  // 2. flat genesis.config keys, which are spelled differently on each side
   for (const [key, genesisKey] of Object.entries(ENGINE_GENESIS_KEYS)) {
     engineParams[key] = pick(cfg[genesisKey], engineDefaults[key]);
   }
 
-  // XDC hardfork blocks carried straight through. Absent in genesis => absent
-  // from the chainspec, so the fork stays off rather than activating at 0.
-  // Emitted for BOTH engines: XdcSubnetChainSpecEngineParameters derives from
-  // XdcChainSpecEngineParameters and overrides only SealEngineType, so it
-  // inherits every one of these properties and binds them the same way.
-  // TIPUpgradeReward is why this matters -- Nethermind reads
-  // IsTipUpgradeRewardEnabled = (TipUpgradeReward ?? ulong.MaxValue) <=
-  // releaseStartBlock, so a dropped key is not "off", it is "never enabled",
-  // and the two clients then disagree at the first reward checkpoint.
+  // 3. XDC hardfork blocks, for both engines. No fallback by design: absent in
+  //    genesis means absent here, which is how the fork stays off (rule 3).
   for (const [key, genesisKey] of Object.entries(ENGINE_FORKS)) {
     engineParams[key] = cfg[genesisKey];
   }
@@ -832,18 +671,16 @@ function pickMaxCodeSize(cfg, maxCodeSizeTransition, paramDefaults, warn) {
   return paramDefaults.MaxCodeSize;
 }
 
-// genesis: the genesis block header, carried through verbatim except for the
-// base fee, which genesis.json leaves null.
+// The genesis block header. Most fields go across verbatim; nonce, mixHash and
+// coinbase are reshaped into the form ChainSpecLoader reads, and baseFeePerGas
+// gets a concrete value where genesis.json has null.
 function buildGenesisBlock(genesis, opts) {
   return {
-    // Nethermind reads the nonce and mixHash out of seal.ethereum, not off the
-    // genesis object: ChainSpecLoader.cs:356-357 takes
-    // Genesis.Seal?.Ethereum?.Nonce ?? 0 and ?.MixHash ?? Keccak.Zero, and
-    // ChainSpecGenesisJson declares neither at the top level. Emitting them
-    // there meant the node silently used 0 and Keccak.Zero instead.
+    // ChainSpecGenesisJson declares none of nonce, mixHash or coinbase at the
+    // top level. ChainSpecLoader.cs:356-357 reads the first two from
+    // Seal.Ethereum (defaulting to 0 and Keccak.Zero) and :369 reads the
+    // beneficiary from Author. Emitted flat, all three were silently ignored.
     seal: { ethereum: { nonce: genesis.nonce, mixHash: genesis.mixHash } },
-    // likewise the beneficiary: ChainSpecLoader.cs:369 reads Genesis.Author,
-    // and there is no "coinbase" on ChainSpecGenesisJson
     author: normalizeAddress(genesis.coinbase),
     timestamp: genesis.timestamp,
     extraData: genesis.extraData,
@@ -851,9 +688,8 @@ function buildGenesisBlock(genesis, opts) {
     difficulty: genesis.difficulty,
     parentHash: genesis.parentHash,
     baseFeePerGas: pick(genesis.baseFeePerGas, DEFAULT_BASE_FEE_PER_GAS),
-    // number and gasUsed have no chainspec equivalent and are not emitted:
-    // genesis is always block 0 with no gas used, and ChainSpecLoader hardcodes
-    // the number to 0.
+    // number and gasUsed are not emitted: genesis is always block 0 with no gas
+    // used, and ChainSpecLoader hardcodes the number anyway.
   };
 }
 
@@ -873,10 +709,8 @@ function translate(genesis, opts = {}) {
     ? (message) => opts.warnings.push(message)
     : (message) => console.error(message);
 
-  // Subnet nodes run a different consensus plugin than a standalone XDPoS
-  // network, and Nethermind selects it by this key. The mapping notes above
-  // spell it "engine.XDPoS" throughout; with opts.subnet the whole block is
-  // named engine.XDPoSSubnet instead, contents unchanged.
+  // Subnet nodes run a different consensus plugin, which Nethermind selects by
+  // this key alone -- the block's contents are the same either way.
   const engineName = opts.subnet ? 'XDPoSSubnet' : 'XDPoS';
 
   return {
