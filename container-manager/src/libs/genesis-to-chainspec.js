@@ -341,18 +341,13 @@ const DEFAULT_ENGINE = {
   XDCXLendingFinalizedTradeAddressBinary: '0x0000000000000000000000000000000000000094',
 };
 
-// The XDPoSSubnet engine plugin binds DIFFERENT property names than XDPoS, so a
-// subnet chainspec is not just XDPoS with a renamed engine block:
-//   XDPoS                      XDPoSSubnet
-//   mergeSignRange          -> MergeSignRange
-//   blackListHFNumber       -> BlackListHFNumber
-//   XDCXAddressBinary       -> XDCXAddrBinary          (a different name, not case)
-//   TradingStateAddressBinary -> tradingStateAddressBinary
-//   TipXDCX/TIPXDCXMinerDisable/TIPXDCXReceiverDisable -> not used at all
-//   TipTrc21Fee             -> TipTrc21Fee              (same name, and last)
-// A name the engine does not bind is silently ignored and its own default
-// applies, which is how a chainspec can look correct and still diverge from the
-// Go nodes. Values below match a working Nethermind+Go subnet deployment.
+// The XDPoSSubnet engine plugin binds the SAME property names as XDPoS:
+// XdcSubnetChainSpecEngineParameters derives from XdcChainSpecEngineParameters
+// and overrides only SealEngineType (and the internal ResolveMinGasPrice), so
+// it inherits every property. Binding is case-insensitive, so the casing
+// differences below are cosmetic -- but a name that is not a property at all is
+// silently ignored and the engine's own default applies, which is how a
+// chainspec can look correct and still diverge from the Go nodes.
 //
 // Key order is the emitted order: translate() spreads this table into the
 // engine block whole, so a key is added, removed or moved here and nowhere
@@ -368,7 +363,7 @@ const DEFAULT_ENGINE_SUBNET = {
   masternodeVotingContract: '0x0000000000000000000000000000000000000088',
   blockSignerContract: '0x0000000000000000000000000000000000000089',
   randomizeSMCBinary: '0x0000000000000000000000000000000000000090',
-  XDCXAddrBinary: '0x0000000000000000000000000000000000000091',
+  XDCXAddressBinary: '0x0000000000000000000000000000000000000091',
   tradingStateAddressBinary: '0x0000000000000000000000000000000000000092',
   XDCXLendingAddressBinary: '0x0000000000000000000000000000000000000093',
   XDCXLendingFinalizedTradeAddressBinary: '0x0000000000000000000000000000000000000094',
