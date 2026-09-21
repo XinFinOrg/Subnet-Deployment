@@ -601,6 +601,10 @@ function pick(...candidates) {
 // Lowercase, 0x-prefixed. Clients accept this fine; we don't bother with the
 // cosmetic EIP-55 mixed-case checksum.
 function normalizeAddress(addr) {
+  // Absent stays absent. Without this, String(undefined) makes the literal
+  // "0xundefined", which Nethermind rejects at load with "hex string of odd
+  // length" -- an error that names neither the field nor the file.
+  if (addr === undefined || addr === null) return undefined;
   return '0x' + String(addr).toLowerCase().replace(/^0x/, '');
 }
 
@@ -696,7 +700,7 @@ function buildEngineParams(cfg, opts) {
     rewardCheckpoint: xdpos.rewardCheckpoint,
     gap: xdpos.gap,
     // note: genesis spells the key "foudationWalletAddr" (sic)
-    foundationWalletAddr: normalizeAddress(xdpos.foudationWalletAddr || xdpos.foundationWalletAddr),
+    foundationWalletAddr: normalizeAddress(pick(xdpos.foudationWalletAddr, xdpos.foundationWalletAddr)),
     // genesis spells this either "switchEpoch" (newer) or "SwitchEpoch" (older).
     // Use ?? not || — the valid value is 0, which is falsy.
     switchEpoch: v2.switchEpoch ?? v2.SwitchEpoch,
@@ -716,6 +720,13 @@ function buildEngineParams(cfg, opts) {
   // Whatever genesis states beats it, and a table entry only shows up where
   // genesis is silent. Genesis reaches a key two ways, hence two passes; both
   // re-assign keys the spread already created, so key order stays the table's.
+  if (shared.foundationWalletAddr === undefined) {
+    throw new Error(
+      'genesis states no XDPoS.foudationWalletAddr (nor foundationWalletAddr); ' +
+        'it has no default, and Nethermind fails to load a chainspec without it'
+    );
+  }
+
   const engineParams = { ...shared, ...engineDefaults };
 
   // 1. chain data off genesis.config.XDPoS, which keeps its name. A table key of
