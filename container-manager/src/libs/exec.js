@@ -516,8 +516,12 @@ function genGenXdposEnv(input){
     content_version += `\nVERSION_NETHERMIND_IMAGE=${input["customversion-xdpos-nethermind-version"]}`;
   }
   content_version += `\nGENERATOR_IMAGE_VERSION=${getGeneratorImage()}`;
-
-
+  // scripts/check-chainspec.sh reads this back to decide whether to pass
+  // --subnet. Recorded explicitly rather than relying on "no value means XDPoS":
+  // the check reads the environment first, so an exported CHAINSPEC_ENGINE left
+  // over from a subnet deployment would otherwise make it archive this
+  // network's correct chainspec and replace it with a subnet one.
+  content_version += `\nCHAINSPEC_ENGINE=XDPoS`;
 
   let content_rewards = "";
   if ("customrewards-checkbox" in input && input["customrewards-checkbox"] != "") {

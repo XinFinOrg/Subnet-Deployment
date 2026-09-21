@@ -33,8 +33,22 @@ fi
 # network names it XDPoS. The converter has to be told which, or the engine
 # block alone reads as a difference and the check would archive and overwrite a
 # perfectly good chainspec. Recorded in gen.env when the deployment is generated.
-if [[ -z "$CHAINSPEC_ENGINE" && -f gen.env ]]; then
-  CHAINSPEC_ENGINE=$(grep -E '^CHAINSPEC_ENGINE=' gen.env | tail -1 | cut -d '=' -f 2-)
+#
+# The record wins over the environment. This deployment's own gen.env is the
+# authority on what it is; an exported CHAINSPEC_ENGINE is almost always a
+# leftover from another deployment in the same shell, and letting it win means a
+# stray value silently rewrites a correct chainspec as the other engine's.
+# Export CHAINSPEC_ENGINE only for a deployment whose gen.env predates this and
+# records nothing.
+if [[ -f gen.env ]]; then
+  recorded_engine=$(grep -E '^CHAINSPEC_ENGINE=' gen.env | tail -1 | cut -d '=' -f 2-)
+  if [[ -n "$recorded_engine" ]]; then
+    if [[ -n "$CHAINSPEC_ENGINE" && "$CHAINSPEC_ENGINE" != "$recorded_engine" ]]; then
+      echo "Note: ignoring CHAINSPEC_ENGINE=$CHAINSPEC_ENGINE from the environment;" \
+           "gen.env records $recorded_engine for this deployment."
+    fi
+    CHAINSPEC_ENGINE="$recorded_engine"
+  fi
 fi
 engine_flag=()
 if [[ "$CHAINSPEC_ENGINE" == "XDPoSSubnet" ]]; then
