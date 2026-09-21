@@ -290,6 +290,23 @@ const DEFAULT_ENGINE = {
 // silently ignored and the engine's own default applies, which is how a
 // chainspec can look correct and still diverge from the Go nodes.
 //
+// Most entries here switch a fork off. The two that switch one ON were checked
+// against XinFinOrg/XDC-Subnet, the client a subnet actually runs, rather than
+// copied from a deployment that happened to work:
+//
+//   tip2019Block: 1 -- Nethermind computes IsTIP2019 = TIP2019Block <=
+//     releaseStartBlock (XdcChainSpecBasedSpecProvider.cs:79), so on from block
+//     1. XDC-Subnet hardcodes common.TIP2019Block = 1 and tests isForked()
+//     against it, so also from block 1. They agree.
+//   TipTrc21Fee: 1 -- Nethermind computes IsTipTrc21FeeEnabled =
+//     (TipTrc21Fee ?? ulong.MaxValue) <= releaseStartBlock (:77), so on from
+//     block 1. XDC-Subnet hardcodes common.TIPTRC21Fee = 0 but tests it
+//     STRICTLY -- core/state_transition.go:271 is
+//     `if st.evm.BlockNumber.Cmp(common.TIPTRC21Fee) > 0` -- so it is live from
+//     block 1 too. They agree. This one is read by the transaction-execution
+//     path (XdcTransactionProcessor), so do not "correct" the 1 to 0 to match
+//     the Go constant: that would enable it a block early.
+//
 // Key order is the emitted order: translate() spreads this table into the
 // engine block whole, so a key is added, removed or moved here and nowhere
 // else. Fallbacks only, as with DEFAULT_ENGINE -- genesis always wins.
