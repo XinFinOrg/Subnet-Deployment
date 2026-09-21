@@ -55,6 +55,18 @@ if [[ "$CHAINSPEC_ENGINE" == "XDPoSSubnet" ]]; then
   engine_flag=(--subnet)
 fi
 
+# The chainspec carries the operator's network name, which the container-manager
+# passes to the converter and gen.env records. Read it back, or the re-run would
+# translate to the converter's default name, see that as a difference and
+# archive and rewrite every chainspec over nothing but the name.
+name_flag=()
+if [[ -z "$NETWORK_NAME" && -f gen.env ]]; then
+  NETWORK_NAME=$(grep -E '^NETWORK_NAME=' gen.env | tail -1 | cut -d '=' -f 2-)
+fi
+if [[ -n "$NETWORK_NAME" ]]; then
+  name_flag=(--name "$NETWORK_NAME")
+fi
+
 genesis="genesis.json"
 chainspec="chainspec.json"
 if [[ -n "$1" && "$1" != -* ]]; then
@@ -83,7 +95,7 @@ docker pull "$GENERATOR_IMAGE_VERSION"
 
 # -u keeps the archived and rewritten files owned by the invoking user
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/data" -w /data "$GENERATOR_IMAGE_VERSION" \
-  node /app/libs/check-chainspec.js "$genesis" "$chainspec" "${engine_flag[@]}" "$@"
+  node /app/libs/check-chainspec.js "$genesis" "$chainspec" "${engine_flag[@]}" "${name_flag[@]}" "$@"
 result=$?
 
 # only 0, 2 and 3 come from the check itself; anything else is docker or node

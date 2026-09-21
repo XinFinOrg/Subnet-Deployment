@@ -202,7 +202,12 @@ function generateXdpos(params) {
     );
     // translate() writes to console.error unless given a sink, and console.error
     // here lands in the container log while the operator's page says success.
-    const chainspec = translate(genesis, { warnings });
+    // gen.env records NETWORK_NAME; without passing it here every chainspec
+    // was called by the converter's default, "xdpos-chain".
+    const chainspec = translate(genesis, {
+      name: params["text-subnet-name"],
+      warnings,
+    });
     fs.writeFileSync(
       path.join(mountPath, "chainspec.json"),
       JSON.stringify(chainspec, null, 2) + "\n"
@@ -275,7 +280,11 @@ function generate(params) {
       fs.readFileSync(path.join(mountPath, "genesis.json"), "utf-8")
     );
     // see the note on the XDPoS path: warnings need a sink to reach the operator
-    const chainspec = translate(genesis, { subnet: true, warnings });
+    const chainspec = translate(genesis, {
+      subnet: true,
+      name: params["text-subnet-name"],
+      warnings,
+    });
     fs.writeFileSync(
       path.join(mountPath, "chainspec.json"),
       JSON.stringify(chainspec, null, 2) + "\n"

@@ -459,7 +459,6 @@ function genXdposCompose(machine_id, num, start_num = 1) {
           "./bootnodes.list:/work/bootnodes.list",
         ],
         restart: "always",
-        network_mode: "host",
         env_file: [`masternode${i}.env`],
         profiles: [compose_profile],
         ports: port_mappings,

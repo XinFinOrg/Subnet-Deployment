@@ -63,7 +63,6 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
           `xinfinorg/xdcsubnets:${config.version.subnet}`,
         volumes: [volume, "${HOSTPWD}/genesis.json:/work/genesis.json"],
         restart: "always",
-        network_mode: "host",
         env_file: [config_path],
         profiles: [compose_profile],
         ports: port_mappings,
@@ -206,8 +205,9 @@ function injectNetworkConfig(compose_object) {
         ipv4_address: component_ip,
       },
     };
+    // every service joins the generated bridge network and gets a fixed IP on
+    // it; no service sets network_mode, which would be incompatible with that
     compose_object["services"][key]["networks"] = component_network;
-    delete compose_object["services"][key]["network_mode"];
     record_services_ip[key] = component_ip;
   });
 
