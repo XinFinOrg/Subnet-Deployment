@@ -9,6 +9,7 @@ module.exports = {
   genServicesConfig,
   genContractDeployEnv,
   bootnodeEnode,
+  filterPeersByRecentIp,
 };
 
 // An enode id is the uncompressed secp256k1 public key without its 0x04 prefix.
@@ -22,6 +23,25 @@ function bootnodeEnode(ip_record) {
   const bootnode_ip =
     config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
   return `enode://${BOOTNODE_ENODE_ID}@${bootnode_ip}:20301`;
+}
+
+// Whether a Nethermind node rate-limits repeat connection attempts per IP
+// (5-minute window). The right value follows the client mix, so it cannot live
+// in the xdc-nmc*.json that every node of a deployment mounts alike.
+//
+// All Nethermind -> false. The nodes boot together, learn each other at once
+// and dial simultaneously; the collisions leave every retry suppressed for the
+// whole window, which strands nodes at zero peers -- fatal where 3 of 4 have to
+// agree. Upstream disables it for Hive and the E2E sync tests, which are this
+// same shape: several nodes, one host, private addresses.
+//
+// Mixed with the Go client -> true. The Go client has no such filter and
+// redials without pause, so an unfiltered Nethermind tears those sessions down
+// and rebuilds them hundreds of times a second. Leaving the filter on lets an
+// established session stay up. Confirmed at 2 of 4, where neither client group
+// reaches quorum alone, so the chain advances only if votes do cross.
+function filterPeersByRecentIp() {
+  return config.num_nethermind !== config.num_subnet;
 }
 
 function genSubnetConfig(subnet_id, key, ip_record) {
@@ -66,6 +86,7 @@ NETHERMIND_JSONRPCCONFIG_PORT=${rpcport}
 NETHERMIND_NETWORKCONFIG_P2PPORT=${port}
 NETHERMIND_NETWORKCONFIG_DISCOVERYPORT=${port}
 NETHERMIND_NETWORKCONFIG_EXTERNALIP=${ip}
+NETHERMIND_NETWORKCONFIG_FILTERPEERSBYRECENTIP=${filterPeersByRecentIp()}
 NETHERMIND_NETWORKCONFIG_BOOTNODES=${bootnodeEnode(ip_record)}
 NETHERMIND_INITCONFIG_DISCOVERYENABLED=true
 NETHERMIND_MININGCONFIG_ENABLED=true
