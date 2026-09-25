@@ -140,56 +140,80 @@ async function checkMining() {
   };
 }
 
-async function checkBlock(containerIP, containerPort) {
+async function rpcCall(containerIP, containerPort, method, params = []) {
   let url = `http://${containerIP}:${containerPort}`;
   const data = {
     jsonrpc: "2.0",
-    method: "XDPoS_getV2BlockByNumber",
-    params: ["latest"],
+    method,
+    params,
     id: 1,
   };
   const headers = {
     "Content-Type": "application/json",
   };
 
+  let response;
   try {
-    let response;
-    try {
-      response = await axios.post(url, data, { headers, timeout: 2000 });
-    } catch (error) {
-      url = `http://localhost:${containerPort}`; //fallback for local testing
-      response = await axios.post(url, data, { headers, timeout: 2000 });
+    response = await axios.post(url, data, { headers, timeout: 2000 });
+  } catch (error) {
+    url = `http://localhost:${containerPort}`; //fallback for local testing
+    response = await axios.post(url, data, { headers, timeout: 2000 });
+  }
+  return response.data.result;
+}
+
+// The two clients report the head block differently:
+//   Go (xdcsubnets): { "Number": 189 }     decimal, capitalised key
+//   Nethermind:      { "number": "0xbd" }  hex string, lowercase key
+// eth_blockNumber returns the hex string form on both.
+function parseBlockNumber(value) {
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string" && value !== "") {
+    const parsed = parseInt(value, /^0x/i.test(value) ? 16 : 10);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+}
+
+async function checkBlock(containerIP, containerPort) {
+  try {
+    const block = await rpcCall(
+      containerIP,
+      containerPort,
+      "XDPoS_getV2BlockByNumber",
+      ["latest"]
+    );
+    if (block != null) {
+      // ?? not ||, so a genuine block 0 is not mistaken for "missing"
+      const number = parseBlockNumber(block.Number ?? block.number);
+      if (number !== undefined) {
+        return number;
+      }
     }
-    let block = response.data.result.Number;
-    if (block == null) block = 0;
-    return block;
+  } catch (error) {
+    console.log(error.code);
+  }
+
+  // Falls through to here when the node does not serve the XDPoS namespace at
+  // all (Xdc missing from JsonRpc.EnabledModules), or answered in a shape we
+  // could not read.
+  try {
+    const hex = await rpcCall(containerIP, containerPort, "eth_blockNumber");
+    const number = parseBlockNumber(hex);
+    if (number !== undefined) {
+      return number;
+    }
   } catch (error) {
     console.log(error.code);
   }
 }
 
 async function checkPeers(containerIP, containerPort) {
-  let url = `http://${containerIP}:${containerPort}`;
-  const data = {
-    jsonrpc: "2.0",
-    method: "net_peerCount",
-    id: 1,
-  };
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
   try {
-    let response;
-    try {
-      response = await axios.post(url, data, { headers, timeout: 2000 });
-    } catch (error) {
-      url = `http://localhost:${containerPort}`; //fallback for local testing
-      response = await axios.post(url, data, { headers, timeout: 2000 });
-    }
-    const peerHex = response.data.result;
-    const peerCount = parseInt(peerHex, 16);
-    return peerCount;
+    const peerHex = await rpcCall(containerIP, containerPort, "net_peerCount");
+    return parseInt(peerHex, 16);
   } catch (error) {
     console.error(error.code);
   }
@@ -402,11 +426,20 @@ function readConfig() {
   let parentnet = findENVInFile("PARENTNET", filepath);
   parentnet = parentnet.length > 0 ? parentnet[0].split("=")[1] : "";
 
+  const commonPath = path.join(mountPath, "common.env");
+  let parentnetUrl = "";
+  if (fs.existsSync(commonPath)) {
+    const found = findENVInFile("PARENTNET_URL", commonPath);
+    // slice(1).join to keep a url that contains "=" intact
+    parentnetUrl = found.length > 0 ? found[0].split("=").slice(1).join("=") : "";
+  }
+
   return {
     networkName: networkName,
     numSubnet: numSubnet,
     numMachine: numMachine,
     parentnet: parentnet,
+    parentnetUrl: parentnetUrl,
   };
 }
 

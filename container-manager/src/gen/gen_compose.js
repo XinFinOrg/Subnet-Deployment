@@ -22,22 +22,52 @@ function genSubnetNodes(machine_id, num, start_num = 1) {
     const port = 20302 + i;
     const rpcport = 8544 + i;
     const wsport = 9554 + i;
-    subnet_nodes[node_name] = {
-      image: `xinfinorg/xdcsubnets:${config.version.subnet}`,
-      volumes: [volume, "${HOSTPWD}/genesis.json:/work/genesis.json"],
-      restart: "always",
-      network_mode: "host",
-      env_file: [config_path],
-      profiles: [compose_profile],
-      ports: [
-        `${port}:${port}/tcp`,
-        `${port}:${port}/udp`,
-        `${rpcport}:${rpcport}/tcp`,
-        `${rpcport}:${rpcport}/udp`,
-        `${wsport}:${wsport}/tcp`,
-        `${wsport}:${wsport}/udp`,
-      ],
-    };
+    const port_mappings = [
+      `${port}:${port}/tcp`,
+      `${port}:${port}/udp`,
+      `${rpcport}:${rpcport}/tcp`,
+      `${rpcport}:${rpcport}/udp`,
+      `${wsport}:${wsport}/tcp`,
+      `${wsport}:${wsport}/udp`,
+    ];
+
+    if (configModule.isNethermindNode(i)) {
+      // Nethermind validator: per-node NETHERMIND_* vars come from
+      // subnet<i>nmc.env, shared/static settings from xdc-nmc.json, and the
+      // chain from chainspec.json rather than genesis.json. Deliberately keeps
+      // the subnet<i> service name and the same RPC port so the wizard's
+      // container discovery and mining check still find it (state.js keys off
+      // both). injectNetworkConfig() adds the networks/ipv4_address block.
+      subnet_nodes[node_name] = {
+        image: `${config.xdpos.nethermind}`,
+        volumes: [
+          volume,
+          "${HOSTPWD}/chainspec.json:/work/chainspec.json",
+          "${HOSTPWD}/xdc-nmc-subnet.json:/work/xdc-nmc.json",
+        ],
+        restart: "always",
+        env_file: [`subnet${i}nmc.env`],
+        command: [
+          "--config=/work/xdc-nmc.json",
+          "--datadir=/work/xdcchain",
+          "--log=debug",
+        ],
+        profiles: [compose_profile],
+        ports: port_mappings,
+      };
+    } else {
+      // Go XDC subnet node (default).
+      subnet_nodes[node_name] = {
+        image:
+          config.version.subnet_image ||
+          `xinfinorg/xdcsubnets:${config.version.subnet}`,
+        volumes: [volume, "${HOSTPWD}/genesis.json:/work/genesis.json"],
+        restart: "always",
+        env_file: [config_path],
+        profiles: [compose_profile],
+        ports: port_mappings,
+      };
+    }
   }
   return subnet_nodes;
 }
@@ -52,6 +82,11 @@ function genBootNode(machine_id) {
     volumes: ["${HOSTPWD}/bootnodes:/work/bootnodes"],
     entrypoint: ["bash", "/work/start-bootnode.sh"],
     command: ["-verbosity", "6", "-nodekey", "bootnode.key"],
+    // start-bootnode.sh copies PRIVATE_KEY_FILE into the bootnode.key it runs
+    // with, so the bootnode keeps the identity gen derived every node's enode
+    // from. Set here rather than in common.env, which the relayer, stats and
+    // frontend containers also read.
+    environment: ["PRIVATE_KEY_FILE=/work/bootnodes/bootnode.key"],
     ports: ["20301:20301/tcp", "20301:20301/udp"],
     profiles: [machine],
   };
@@ -157,7 +192,9 @@ function injectNetworkConfig(compose_object) {
   Object.entries(compose_object["services"]).forEach((entry) => {
     const [key, value] = entry;
     let component_ip;
-    if (key.startsWith("subnet")) {
+    if (key === "bootnode") {
+      component_ip = ip_string_base + "254"; // fixed, predictable bootnode IP
+    } else if (key.startsWith("subnet")) {
       component_ip = ip_string_base + parseInt(start_ip_subnet);
       start_ip_subnet += 1;
     } else {
@@ -173,8 +210,9 @@ function injectNetworkConfig(compose_object) {
         ipv4_address: component_ip,
       },
     };
+    // every service joins the generated bridge network and gets a fixed IP on
+    // it; no service sets network_mode, which would be incompatible with that
     compose_object["services"][key]["networks"] = component_network;
-    delete compose_object["services"][key]["network_mode"];
     record_services_ip[key] = component_ip;
   });
 

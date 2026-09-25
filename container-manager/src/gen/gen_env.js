@@ -1,12 +1,48 @@
+const ethers = require("ethers");
 const configModule = require("./config_gen");
 const config = configModule.config;
 Object.freeze(config);
 
 module.exports = {
   genSubnetConfig,
+  genNethermindSubnetConfig,
   genServicesConfig,
   genContractDeployEnv,
+  bootnodeEnode,
+  filterPeersByRecentIp,
 };
+
+// An enode id is the uncompressed secp256k1 public key without its 0x04 prefix.
+// Deriving it from the bootnode.key gen writes is what keeps the two in step —
+// hardcoding the id let it drift from whatever key the bootnode came up with.
+const BOOTNODE_ENODE_ID = new ethers.SigningKey(
+  `0x${config.bootnode_pk}`
+).publicKey.slice(4);
+
+function bootnodeEnode(ip_record) {
+  const bootnode_ip =
+    config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
+  return `enode://${BOOTNODE_ENODE_ID}@${bootnode_ip}:20301`;
+}
+
+// Whether a Nethermind node rate-limits repeat connection attempts per IP
+// (5-minute window). The right value follows the client mix, so it cannot live
+// in the xdc-nmc*.json that every node of a deployment mounts alike.
+//
+// All Nethermind -> false. The nodes boot together, learn each other at once
+// and dial simultaneously; the collisions leave every retry suppressed for the
+// whole window, which strands nodes at zero peers -- fatal where 3 of 4 have to
+// agree. Upstream disables it for Hive and the E2E sync tests, which are this
+// same shape: several nodes, one host, private addresses.
+//
+// Mixed with the Go client -> true. The Go client has no such filter and
+// redials without pause, so an unfiltered Nethermind tears those sessions down
+// and rebuilds them hundreds of times a second. Leaving the filter on lets an
+// established session stay up. Confirmed at 2 of 4, where neither client group
+// reaches quorum alone, so the chain advances only if votes do cross.
+function filterPeersByRecentIp() {
+  return config.num_nethermind !== config.num_subnet;
+}
 
 function genSubnetConfig(subnet_id, key, ip_record) {
   const key_name = `key${subnet_id}`;
@@ -15,15 +51,11 @@ function genSubnetConfig(subnet_id, key, ip_record) {
   const port = 20303 + subnet_id - 1;
   const rpcport = 8545 + subnet_id - 1;
   const wsport = 9555 + subnet_id - 1;
-  const bootnode_ip =
-    config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
   const stats_ip = config.num_machines === 1 ? ip_record["stats"] : config.ip_1;
   const config_env = `
 INSTANCE_NAME=subnet${subnet_id}
 PRIVATE_KEY=${private_key}
-BOOTNODES=enode://cc566d1033f21c7eb0eb9f403bb651f3949b5f63b40683917\
-765c343f9c0c596e9cd021e2e8416908cbc3ab7d6f6671a83c85f7b121c1872f8be\
-50a591723a5d@${bootnode_ip}:20301
+BOOTNODES=${bootnodeEnode(ip_record)}
 NETWORK_ID=${config.network_id}
 SYNC_MODE=full
 RPC_API=db,eth,debug,miner,net,shh,txpool,personal,web3,XDPoS
@@ -32,7 +64,37 @@ STATS_SECRET=${config.secret_string}
 PORT=${port}
 RPCPORT=${rpcport}
 WSPORT=${wsport}
-LOG_LEVEL=2
+LOG_LEVEL=4
+`;
+
+  return config_env;
+}
+
+// Per-node env file (subnet<i>nmc.env) for a Nethermind subnet node. Nethermind
+// reads NETHERMIND_<CATEGORY>CONFIG_<PROPERTY> env vars; everything shared and
+// static lives in xdc-nmc.json, so only per-node values are emitted here.
+// Ports match genSubnetConfig so a node keeps its slot when its client changes.
+function genNethermindSubnetConfig(subnet_id, key, ip_record) {
+  const private_key = key[`key${subnet_id}`]["PrivateKey"]; // 0x-prefixed, unlike the Go client's
+  const port = 20303 + subnet_id - 1;
+  const rpcport = 8545 + subnet_id - 1;
+  const ip = ip_record[`subnet${subnet_id}`];
+  const config_env = `
+NETHERMIND_JSONRPCCONFIG_ENABLED=true
+NETHERMIND_JSONRPCCONFIG_HOST=0.0.0.0
+NETHERMIND_JSONRPCCONFIG_PORT=${rpcport}
+NETHERMIND_NETWORKCONFIG_P2PPORT=${port}
+NETHERMIND_NETWORKCONFIG_DISCOVERYPORT=${port}
+NETHERMIND_NETWORKCONFIG_EXTERNALIP=${ip}
+NETHERMIND_NETWORKCONFIG_FILTERPEERSBYRECENTIP=${filterPeersByRecentIp()}
+NETHERMIND_NETWORKCONFIG_BOOTNODES=${bootnodeEnode(ip_record)}
+NETHERMIND_INITCONFIG_DISCOVERYENABLED=true
+NETHERMIND_MININGCONFIG_ENABLED=true
+NETHERMIND_KEYSTORECONFIG_TESTNODEKEY=${private_key}
+NETHERMIND_HEALTHCHECKSCONFIG_ENABLED=true
+NETHERMIND_METRICSCONFIG_ENABLED=true
+NETHERMIND_METRICSCONFIG_EXPOSEPORT=8009
+NO_COLOR=1
 `;
 
   return config_env;

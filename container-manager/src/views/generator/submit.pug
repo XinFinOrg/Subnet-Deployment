@@ -1,6 +1,24 @@
 html
   head
     title="Submitted"
+    style
+      include ./pure-min.css
+      include ./custom.css
   body
     h1=message
     h1=error
+    if warnings && warnings.length
+      //- chainspec converter warnings. The config generated, so this is not a
+      //- failure page, but these say where Nethermind and the Go nodes will not
+      //- agree and the operator has to see them before booting.
+      .chainspec-warnings
+        h2 Chainspec warnings
+        ul
+          each warning in warnings
+            li=warning
+    if failed
+      //- only on failure: the server is still running, so going back lets the
+      //- user fix the form (history.back keeps the values already filled in).
+      //- keyed off `failed`, not `error` -- a failing step can exit with nothing
+      //- on stdout, and the button still has to show.
+      button.pure-button(type="button" onclick="history.back()") Back to the form

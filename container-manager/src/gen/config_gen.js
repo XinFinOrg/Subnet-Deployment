@@ -2,12 +2,40 @@ const crypto = require("crypto");
 const net = require("net");
 const dotenv = require("dotenv");
 const ethers = require("ethers");
-dotenv.config({ path: `${__dirname}/../../mount/generated/gen.env` });
+// override: gen.env is the source of truth for a generation. The manager
+// process requires this module too, so its process.env holds whatever gen.env
+// said when it first loaded; without override that stale value is inherited by
+// the `node gen.js` child and wins over the file just written.
+dotenv.config({
+  path: `${__dirname}/../../mount/generated/gen.env`,
+  override: true,
+});
+
+// The bootnode's identity has to be fixed: start-bootnode.sh only runs
+// `bootnode -genkey` when it is handed no key, and the key it generates lands
+// in the container's /work, which is not the mounted volume. So without a key
+// of our own the bootnode came up with a fresh enode on every recreate while
+// the enode written into every node's env file stayed as it was — no node ever
+// matched the bootnode that was actually running. Set BOOTNODE_PK to reuse an
+// existing bootnode identity across regenerations.
+function bootnodePrivateKey(raw) {
+  if (!raw) {
+    return crypto.randomBytes(32).toString("hex");
+  }
+  // go-ethereum's LoadECDSA wants bare lowercase hex, no 0x
+  const key = raw.trim().replace(/^0x/i, "").toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(key)) {
+    console.log("Invalid BOOTNODE_PK, expected 64 hex characters");
+    process.exit(1);
+  }
+  return key;
+}
 
 const config = {
   deployment_path: process.env.CONFIG_PATH || "",
   num_machines: parseInt(process.env.NUM_MACHINE),
   num_subnet: parseInt(process.env.NUM_SUBNET),
+  num_nethermind: parseInt(process.env.NUM_NETHERMIND) || 0,
   ip_1: process.env.MAIN_IP || "",
   public_ip: process.env.PUBLIC_IP || process.env.MAIN_IP,
   network_name: process.env.NETWORK_NAME,
@@ -16,12 +44,16 @@ const config = {
   ),
   secret_string:
     process.env.SERVICES_SECRET || crypto.randomBytes(10).toString("hex"),
+  bootnode_pk: bootnodePrivateKey(process.env.BOOTNODE_PK),
   relayer_mode: process.env.RELAYER_MODE || "full",
   docker_image_name:
-    process.env.IMAGE_NAME || "xinfinorg/subnet-generator:latest",
+    process.env.IMAGE_NAME || "xinfinorg/subnet-generator:generator-v3.1.0",
   version: {
     genesis: process.env.VERSION_GENESIS || "v0.3.1",
     subnet: process.env.VERSION_SUBNET || "v0.3.2",
+    // full image name; overrides the xinfinorg/xdcsubnets:<subnet> default when
+    // set, so a node build outside that repo/tag scheme can be used
+    subnet_image: process.env.VERSION_SUBNET_IMAGE || "",
     bootnode: process.env.VERSION_BOOTNODE || "v0.3.1",
     relayer: process.env.VERSION_RELAYER || "v0.3.1",
     stats: process.env.VERSION_STATS || "v0.1.11",
@@ -55,7 +87,8 @@ const config = {
     output_path: `${__dirname}/../../mount/generated/`,
   },
   xdpos: {
-    xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/devnet:dev-upgrade-53e5601",
+    xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/devnet:dev-upgrade-cdce8fc",
+    nethermind: process.env.VERSION_NETHERMIND_IMAGE || "nethermindeth/nethermind:master-4e36ba0",
     stake_threshold: parseInt(process.env.MASTERNODE_MINIMUM_STAKE) || "",
     reward_yield: parseInt(process.env.REWARDS_YIELD) || "",
     foundation_addr: "",
@@ -72,7 +105,16 @@ const config = {
 module.exports = {
   config,
   configSanityCheck,
+  isNethermindNode,
 };
+
+// The last `num_nethermind` nodes run the Nethermind client instead of the Go
+// client. They stay validators and reuse the same key/port/IP slot, so nothing
+// else in the deployment has to know which client a node runs.
+// (gen_xdpos.js carries its own copy of this for the private-network path.)
+function isNethermindNode(subnet_id) {
+  return subnet_id > config.num_subnet - config.num_nethermind;
+}
 
 function validatePK(private_key) {
   let wallet = new ethers.Wallet(private_key);
@@ -87,6 +129,11 @@ function configSanityCheck(config) {
 
   if (config.num_machines < 1 || config.num_subnet < 1) {
     console.log("NUM_MACHINE and NUM_SUBNET must be 1 or more");
+    process.exit(1);
+  }
+
+  if (config.num_nethermind < 0 || config.num_nethermind > config.num_subnet) {
+    console.log("NUM_NETHERMIND must be between 0 and NUM_SUBNET");
     process.exit(1);
   }
 
@@ -126,7 +173,7 @@ function configSanityCheck(config) {
     config.parentnet.network === "mainnet"
   ) {
     let official_urls = {
-      devnet: "https://devnetstats.apothem.network/devnet",
+      devnet: "https://rpc1.devnet.xinfin.org",
       testnet: "https://erpc.apothem.network/",
       mainnet: "https://rpc.xinfin.network",
     };
