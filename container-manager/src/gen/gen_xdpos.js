@@ -55,7 +55,13 @@ doc["services"]["bootnode"] = {
     entrypoint: ["bash", "/work/start-bootnode.sh"],
     command: ["-verbosity", "6", "-nodekey", "bootnode.key"],
     ports: ["20301:20301/tcp", "20301:20301/udp"],
-    environment: ["BOOTNODE_PORT=20301"],
+    // PRIVATE_KEY_FILE is what start-bootnode.sh builds bootnode.key from, so
+    // the bootnode keeps the identity the enodes below were derived from
+    // instead of generating a throwaway key on every recreate.
+    environment: [
+      "BOOTNODE_PORT=20301",
+      "PRIVATE_KEY_FILE=/work/bootnodes/bootnode.key",
+    ],
     profiles: ["machine1"],
   };
 
@@ -65,9 +71,7 @@ doc, (ip_record = gen_compose.injectNetworkConfig(doc));
 
 // bootnode enode for bootnodes.list — set here so it is populated even when
 // every masternode runs Nethermind (and genXdposNodeConfig is never called).
-const bootnode_ip =
-  config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
-bootnode = `enode://cc566d1033f21c7eb0eb9f403bb651f3949b5f63b40683917765c343f9c0c596e9cd021e2e8416908cbc3ab7d6f6671a83c85f7b121c1872f8be50a591723a5d@${bootnode_ip}:20301\n`;
+bootnode = `${gen_env.bootnodeEnode(ip_record)}\n`;
 
 subnetconf = [];
 for (let i = 1; i <= config.num_subnet; i++) {
@@ -118,6 +122,15 @@ function writeGenerated(output_dir) {
       exit();
     }
   });
+
+  // Pins the bootnode's identity so the enode above keeps matching it; the
+  // bootnode reads this via PRIVATE_KEY_FILE.
+  fs.mkdirSync(`${output_dir}/bootnodes`, { recursive: true });
+  fs.writeFileSync(
+    `${output_dir}/bootnodes/bootnode.key`,
+    `${config.bootnode_pk}\n`,
+    { mode: 0o600 }
+  );
 
   fs.writeFileSync(
     `${output_dir}/docker-compose.yml`,
@@ -359,11 +372,7 @@ function genXdposNodeConfig(subnet_id, key, ip_record) {
   const port = 20303 + subnet_id - 1;
   const rpcport = 8545 + subnet_id - 1;
   const wsport = 9555 + subnet_id - 1;
-  const bootnode_ip =
-    config.num_machines === 1 ? ip_record["bootnode"] : config.ip_1;
-  bootnode = `enode://cc566d1033f21c7eb0eb9f403bb651f3949b5f63b40683917\
-765c343f9c0c596e9cd021e2e8416908cbc3ab7d6f6671a83c85f7b121c1872f8be\
-50a591723a5d@${bootnode_ip}:20301\n`;
+  bootnode = `${gen_env.bootnodeEnode(ip_record)}\n`;
   const stats_ip = config.num_machines === 1 ? ip_record["stats"] : config.ip_1;
   const config_env = `
 INSTANCE_NAME=Masternode${subnet_id}

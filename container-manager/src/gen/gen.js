@@ -132,6 +132,15 @@ function writeGenerated(output_dir) {
     }
   );
 
+  // Pins the bootnode's identity so the enode written into every node's env
+  // file keeps matching it; the bootnode reads this via PRIVATE_KEY_FILE.
+  fs.mkdirSync(`${output_dir}/bootnodes`, { recursive: true });
+  fs.writeFileSync(
+    `${output_dir}/bootnodes/bootnode.key`,
+    `${config.bootnode_pk}\n`,
+    { mode: 0o600 }
+  );
+
   fs.writeFileSync(`${output_dir}/common.env`, commonconf, (err) => {
     if (err) {
       console.error(err);

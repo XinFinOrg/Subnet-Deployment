@@ -82,6 +82,11 @@ function genBootNode(machine_id) {
     volumes: ["${HOSTPWD}/bootnodes:/work/bootnodes"],
     entrypoint: ["bash", "/work/start-bootnode.sh"],
     command: ["-verbosity", "6", "-nodekey", "bootnode.key"],
+    // start-bootnode.sh copies PRIVATE_KEY_FILE into the bootnode.key it runs
+    // with, so the bootnode keeps the identity gen derived every node's enode
+    // from. Set here rather than in common.env, which the relayer, stats and
+    // frontend containers also read.
+    environment: ["PRIVATE_KEY_FILE=/work/bootnodes/bootnode.key"],
     ports: ["20301:20301/tcp", "20301:20301/udp"],
     profiles: [machine],
   };

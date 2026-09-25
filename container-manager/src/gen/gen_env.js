@@ -1,3 +1,4 @@
+const ethers = require("ethers");
 const configModule = require("./config_gen");
 const config = configModule.config;
 Object.freeze(config);
@@ -7,12 +8,15 @@ module.exports = {
   genNethermindSubnetConfig,
   genServicesConfig,
   genContractDeployEnv,
+  bootnodeEnode,
 };
 
-// The bootnode container always starts from the same bootnode.key, so its enode
-// id is fixed; only the host it is reached on changes.
-const BOOTNODE_ENODE_ID =
-  "cc566d1033f21c7eb0eb9f403bb651f3949b5f63b40683917765c343f9c0c596e9cd021e2e8416908cbc3ab7d6f6671a83c85f7b121c1872f8be50a591723a5d";
+// An enode id is the uncompressed secp256k1 public key without its 0x04 prefix.
+// Deriving it from the bootnode.key gen writes is what keeps the two in step —
+// hardcoding the id let it drift from whatever key the bootnode came up with.
+const BOOTNODE_ENODE_ID = new ethers.SigningKey(
+  `0x${config.bootnode_pk}`
+).publicKey.slice(4);
 
 function bootnodeEnode(ip_record) {
   const bootnode_ip =

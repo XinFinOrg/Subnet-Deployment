@@ -11,6 +11,26 @@ dotenv.config({
   override: true,
 });
 
+// The bootnode's identity has to be fixed: start-bootnode.sh only runs
+// `bootnode -genkey` when it is handed no key, and the key it generates lands
+// in the container's /work, which is not the mounted volume. So without a key
+// of our own the bootnode came up with a fresh enode on every recreate while
+// the enode written into every node's env file stayed as it was — no node ever
+// matched the bootnode that was actually running. Set BOOTNODE_PK to reuse an
+// existing bootnode identity across regenerations.
+function bootnodePrivateKey(raw) {
+  if (!raw) {
+    return crypto.randomBytes(32).toString("hex");
+  }
+  // go-ethereum's LoadECDSA wants bare lowercase hex, no 0x
+  const key = raw.trim().replace(/^0x/i, "").toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(key)) {
+    console.log("Invalid BOOTNODE_PK, expected 64 hex characters");
+    process.exit(1);
+  }
+  return key;
+}
+
 const config = {
   deployment_path: process.env.CONFIG_PATH || "",
   num_machines: parseInt(process.env.NUM_MACHINE),
@@ -24,6 +44,7 @@ const config = {
   ),
   secret_string:
     process.env.SERVICES_SECRET || crypto.randomBytes(10).toString("hex"),
+  bootnode_pk: bootnodePrivateKey(process.env.BOOTNODE_PK),
   relayer_mode: process.env.RELAYER_MODE || "full",
   docker_image_name:
     process.env.IMAGE_NAME || "xinfinorg/subnet-generator:generator-v3.1.0",
