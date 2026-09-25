@@ -7,10 +7,40 @@
 # files are kept -- only the chain data goes -- but every block, every account
 # balance and every deployed contract goes with it.
 #
-# Usage: ./scripts/reset-chain.sh
-#   Takes no arguments: every profile in this deployment is stopped, since the
-#   chain data is shared and leaving any node running would have it writing into
-#   a directory that is about to be deleted.
+# Usage: ./scripts/reset-chain.sh [-y|--yes]
+#   -y, --yes  Skip the confirmation prompt, for scripted resets. Refuses if a
+#              node of a different chain id answers on this deployment's ports:
+#              that notice exists for a human to act on, and --yes means there
+#              is no human. Re-run interactively to decide with it in view.
+#
+#   Takes no other arguments: every profile in this deployment is stopped, since
+#   the chain data is shared and leaving any node running would have it writing
+#   into a directory that is about to be deleted.
+#
+# Exit codes: 0 reset (or nothing to reset), 1 cancelled, 2 refused or bad usage.
+
+# --------------------------------------------------------------------------
+# Arguments, before any of the work below: a typo should cost a millisecond,
+# not a summary. An unrecognised argument is refused rather than ignored --
+# ignoring one is how `-Y` came to look like it had been accepted while the
+# script still sat at the prompt.
+# --------------------------------------------------------------------------
+assume_yes=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    # -Y as well as -y: Y is the literal reply the prompt asks for, so it is
+    # the spelling a hand reaches for first.
+    -y | -Y | --yes)
+      assume_yes=1
+      ;;
+    *)
+      echo "Error: unknown argument '$1'"
+      echo "Usage: $(basename "$0") [-y|--yes]"
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 # --------------------------------------------------------------------------
 # Locate the deployment, strictly.
@@ -195,8 +225,30 @@ banner \
   "" \
   "This cannot be undone."
 
-read -r -p "Type Y to proceed, anything else to cancel: " reply
-if [[ $reply != "Y" ]]; then
+if [[ $assume_yes == 1 ]]; then
+  # Every guard above still applies; --yes replaces the prompt, nothing else.
+  # The exception is the foreign-chain notice, which is addressed to whoever is
+  # reading. Unattended, there is no one, so stop instead of rolling past it.
+  if [[ $foreign -gt 0 ]]; then
+    banner \
+      "Refusing to reset unattended." \
+      "" \
+      "$foreign node(s) on 8545-$((8544 + ${#datadirs[@]})) answer for a chain id" \
+      "other than this deployment's (${chain_id:-unknown})." \
+      "" \
+      "NOTHING WAS STOPPED AND NOTHING WAS DELETED." \
+      "Re-run without --yes to review that and confirm by hand."
+    exit 2
+  fi
+  echo "Proceeding without confirmation (--yes)."
+elif ! read -r -p "Type Y to proceed, anything else to cancel: " reply; then
+  # EOF rather than an answer: stdin is closed or empty, so this is a scripted
+  # run that did not say so. Name the flag instead of a bare "cancelled".
+  echo ""
+  echo "No answer (stdin reached end of input). Nothing was stopped or deleted."
+  echo "Pass --yes to reset without the prompt."
+  exit 1
+elif [[ $reply != "Y" ]]; then
   echo "Cancelled. Nothing was stopped and nothing was deleted."
   exit 1
 fi
