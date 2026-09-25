@@ -1,15 +1,16 @@
 #!/bin/bash
 # Reset the chain: stop the containers, then delete every node's data directory
-# (xdcchain*) in this deployment. The next docker-up.sh starts again from
+# (xdcchain*) in this deployment. Starting the chain again brings it up from
 # block 0.
 #
 # Destructive and not undoable. Keys, genesis.json, chainspec.json and the env
 # files are kept -- only the chain data goes -- but every block, every account
 # balance and every deployed contract goes with it.
 #
-# Usage: ./scripts/reset-chain.sh [PROFILE]
-#   PROFILE is passed to docker-down.sh / docker compose, and is only needed on
-#   a deployment with more than one.
+# Usage: ./scripts/reset-chain.sh
+#   Takes no arguments: every profile in this deployment is stopped, since the
+#   chain data is shared and leaving any node running would have it writing into
+#   a directory that is about to be deleted.
 
 # --------------------------------------------------------------------------
 # Locate the deployment, strictly.
@@ -61,6 +62,12 @@ compose="docker-compose"
 if ! which docker-compose > /dev/null 2>&1; then
   compose="docker compose"
 fi
+
+# A subnet docker-compose.yml interpolates ${HOSTPWD} into every volume path.
+# It is normally exported by whatever starts the chain; export it here too, or
+# compose warns once per service and resolves the paths to /xdcchain1 etc.
+# $root is the deployment directory on the host, which is exactly what it means.
+export HOSTPWD="$root"
 
 # --------------------------------------------------------------------------
 # Collect the targets. Direct children of $root only: nullglob so an unmatched
@@ -196,33 +203,16 @@ fi
 
 # --------------------------------------------------------------------------
 # Stop first. Deleting a running node's data directory leaves it writing into a
-# path that no longer exists.
-# --------------------------------------------------------------------------
+# path that no longer exists. Every profile is stopped, not one: `down` with no
+# --profile leaves profiled services running, so each configured profile is
+# passed explicitly.
 echo ""
 echo "Stopping containers..."
-if [[ -f docker-down.sh ]]; then
-  bash docker-down.sh "$@"
-else
-  # a subnet deployment gets no docker-down.sh, so drive compose directly
-  profile="$1"
-  if [[ -z $profile ]]; then
-    profiles=($($compose config --profiles))
-    if [[ ${#profiles[@]} == 1 ]]; then
-      profile="${profiles[0]}"
-    elif [[ ${#profiles[@]} == 0 ]]; then
-      echo "Error: no profile found in docker-compose.yml, cannot stop the containers."
-      echo "NOTHING WAS DELETED."
-      exit 2
-    else
-      echo "Error: this deployment has more than one profile; name the one to reset."
-      echo "Usage: ./scripts/reset-chain.sh PROFILE"
-      echo "Profiles: ${profiles[*]}"
-      echo "NOTHING WAS DELETED."
-      exit 2
-    fi
-  fi
-  $compose --profile "$profile" down
-fi
+profile_flags=()
+for p in $($compose config --profiles 2>/dev/null); do
+  profile_flags+=(--profile "$p")
+done
+$compose "${profile_flags[@]}" down
 
 down_result=$?
 if [[ $down_result != 0 ]]; then
@@ -244,4 +234,5 @@ done
 banner \
   "Reset complete. ${#datadirs[@]} directory(ies) removed from $root" \
   "" \
-  "Bring the chain back up from block 0 with ./docker-up.sh"
+  "Start the chain again to bring it up from block 0:" \
+  "  ./docker-up.sh, or the Start button in the wizard."
