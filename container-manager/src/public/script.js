@@ -66,7 +66,9 @@ function createCollapsibleDiv(route) {
   newDiv.className = "output-wrapper";
 
   const buttonDiv = document.createElement("div");
+  buttonDiv.className = "output-header";
   const command = document.createElement("button");
+  command.className = "route-chip";
   command.textContent = route;
   const toggleButton = document.createElement("button");
   toggleButton.className = "toggle-button";
@@ -259,6 +261,7 @@ function checkMiningState(mineInfo) {
     document.getElementById(
       "mining-status"
     ).innerHTML = `Confirm mining status: Not Mining`;
+    document.getElementById("mining-status").dataset.state = "idle";
     return;
   }
   if (mineInfo.blocks[0] > prevPrevBlockNum) {
@@ -267,6 +270,7 @@ function checkMiningState(mineInfo) {
     document.getElementById(
       "mining-status"
     ).innerHTML = `Confirm mining status: Mining`;
+    document.getElementById("mining-status").dataset.state = "mining";
   }
 }
 

@@ -8,11 +8,14 @@
 </head>
 <body onload="fetchLoop()">
   <div id="body-wrap" class="body-wrap">
-    <div class="container">
-      <h1>Subnet Deployment Wizard</h1>
+    <div class="container wizard">
+      <header class="page-header">
+        <h1>Subnet Deployment Wizard</h1>
+        <p class="page-subtitle">Configure, launch and connect an XDC subnet in six steps.</p>
+      </header>
       <div class="left-aligned">
-        <div>
-          <div>1. Select Subnet Configuration</div> 
+        <section class="step">
+          <h2 class="step-title"><span class="step-num">1</span>Select Subnet Configuration</h2>
           <!-- the generator (/gen) is embedded instead of opened in its own tab;
                setupGenEmbedAutoResize() in script.js keeps the frame the height
                of the form inside it -->
@@ -20,80 +23,85 @@
             <div id="gen-embed-note"></div>
             <iframe id="gen-embed" src="/gen" title="Subnet Configuration Generator"></iframe>
           </div>
-        </div>
-        <div>
+        </section>
+        <section class="step">
+          <h2 class="step-title"><span class="step-num">2</span>Start Subnet</h2>
           <div id="copy-instruction"></div>
-          <div>2. Start Subnet</div>
-          <button id="start-subnet-button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
-          <button id="stop-subnet-button" class="button" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
-          &nbsp;&nbsp;<div id="mining-status">Confirm mining status: Not Mining</div>
-          <br>
-        </div>
-        <div >
-          <div>3. Add Parentnet balance to: </div>
+          <div class="button-row">
+            <button id="start-subnet-button" class="button" onclick="callStreamApi('/start_subnet', 'output')">Start Subnet</button>
+            <button id="stop-subnet-button" class="button button-stop" onclick="callStreamApi('/stop_subnet', 'output')">Stop Subnet</button>
+          </div>
+          <div id="mining-status">Confirm mining status: Not Mining</div>
+        </section>
+        <section class="step">
+          <h2 class="step-title"><span class="step-num">3</span>Add Parentnet balance to</h2>
           <div class="display-address">
             <div id="parentnet-wallet"></div>
             <div id="parentnet-zero-wallet"></div>
           </div>
           <!-- values filled by showFaucet(); faucet urls come from
                PARENTNET_FAUCETS in script.js -->
-          <div id="parentnet-name-line">&emsp;Parentnet: <span id="parentnet-name"></span></div>
-          <div id="parentnet-url-line">&emsp;Parentnet URL: <span id="parentnet-url"></span></div>
-          <div id="parentnet-faucet-line">&emsp;Faucet: <span id="parentnet-faucet-links"></span></div>
-          <br>
-        </div>
+          <div id="parentnet-name-line" class="info-line">Parentnet: <span id="parentnet-name"></span></div>
+          <div id="parentnet-url-line" class="info-line">Parentnet URL: <span id="parentnet-url"></span></div>
+          <div id="parentnet-faucet-line" class="info-line">Faucet: <span id="parentnet-faucet-links"></span></div>
+        </section>
         <!-- <div id="subnet-faucet-info">
           <div>3. Add Subnet balance to: </div>
           <div id="subnet-wallet"></div>
           <div id="subnet-zero-wallet"></div>
           &emsp;<a href="/faucet" target="_blank">Subnet Faucet</a>
         </div> -->
-        <br>
-        <div>
-          <div>4. Deploy Smart Contracts</div>
-          <button id="button-csc-lite" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_lite', 'output')">Deploy CSC Lite</button>
-          <button id="button-csc-full" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_full', 'output')">Deploy CSC Full</button>
-          <button id="button-reverse-csc" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_reversefull', 'output')">Deploy CSC Reverse</button>
-          <button id="button-subswap" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_subswap', 'output')">Deploy Subswap</button> 
-        </div>
-        <div>
-          <div>5. Start Required Services</div>
-          <button id="start-services-button" class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
-          <button id="stop-services-button" class="button" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
-          <div id="services-details"></div>
-        </div>
-        <div>
-          <div>6. Start Optional Services</div>
-          <div>
-            <button id="start-subswap-button" class="button" onclick="callStreamApi('/start_subswap_frontend', 'output')">Start Subswap Frontend</button>
-            <button id="stop-subswap-button" class="button" onclick="callStreamApi('/stop_subswap_frontend', 'output')">Stop Subswap Frontend</button>
+        <section class="step">
+          <h2 class="step-title"><span class="step-num">4</span>Deploy Smart Contracts</h2>
+          <div class="button-row">
+            <button id="button-csc-lite" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_lite', 'output')">Deploy CSC Lite</button>
+            <button id="button-csc-full" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_full', 'output')">Deploy CSC Full</button>
+            <button id="button-reverse-csc" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_csc_reversefull', 'output')">Deploy CSC Reverse</button>
+            <button id="button-subswap" class="button contract-deploy" disabled="true" onclick="callStreamApi('/deploy_subswap', 'output')">Deploy Subswap</button>
           </div>
-          <div id="subswap-details"></div>
+        </section>
+        <section class="step">
+          <h2 class="step-title"><span class="step-num">5</span>Start Required Services</h2>
+          <div class="button-row">
+            <button id="start-services-button" class="button" onclick="callStreamApi('/start_services', 'output')">Start Services</button>
+            <button id="stop-services-button" class="button button-stop" onclick="callStreamApi('/stop_services', 'output')">Stop Services</button>
+          </div>
+          <div id="services-details" class="service-links"></div>
+        </section>
+        <section class="step">
+          <h2 class="step-title"><span class="step-num">6</span>Start Optional Services</h2>
+          <div class="button-row">
+            <button id="start-subswap-button" class="button" onclick="callStreamApi('/start_subswap_frontend', 'output')">Start Subswap Frontend</button>
+            <button id="stop-subswap-button" class="button button-stop" onclick="callStreamApi('/stop_subswap_frontend', 'output')">Stop Subswap Frontend</button>
+          </div>
+          <div id="subswap-details" class="service-links"></div>
           <!-- <div> -->
             <!-- <button id="start-explorer-button" class="button" onclick="callStreamApi('/start_explorer', 'output')">Start XDC Explorer</button> -->
             <!-- <button id="stop-explorer-button" class="button" onclick="callStreamApi('/stop_explorer', 'output')">Stop XDC Explorer</button> -->
           <!-- </div> -->
-        </div>
+        </section>
         <!-- moved out of the embedded generator (/gen): as section 1 it put the
              helpers in the middle of the wizard, between step 1 and step 2 -->
         <div id="helpers">
           <div id="helpers-title">Helpers</div>
-          <div class="helper-block">
-            <div class="helper-title">Address Generator</div>
-            <div id="address-gen-pub">Address: </div>
-            <div id="address-gen-pk">Private Key: </div>
-            <button class="button" onclick="genAddress()">Generate Address</button>
-            <span id="disclaimer">*Generation is done locally on your machine, fully offline.</span>
-          </div>
-          <div class="helper-block">
-            <div class="helper-title">XDC Faucet</div>
-            <div><a href="https://faucet.apothem.network/" target="_blank">Testnet(Apothem) Faucet</a></div>
-            <div><a href="https://faucet.blocksscan.io/" target="_blank">Testnet Faucet by BlocksScan</a></div>
-          </div>
-          <div class="helper-block">
-            <div class="helper-title">Documentation</div>
-            <div><a href="https://xinfinorg.github.io/xdc-subnet-docs/deployment/launch_subnet" target="_blank">Official Subnet Documentation</a></div>
-            <div><a href="https://github.com/XinFinOrg/XDC-Subnet" target="_blank">XDC-Subnet Github</a></div>
+          <div class="helper-grid">
+            <div class="helper-block">
+              <div class="helper-title">Address Generator</div>
+              <div id="address-gen-pub">Address: </div>
+              <div id="address-gen-pk">Private Key: </div>
+              <button class="button" onclick="genAddress()">Generate Address</button>
+              <span id="disclaimer">*Generation is done locally on your machine, fully offline.</span>
+            </div>
+            <div class="helper-block">
+              <div class="helper-title">XDC Faucet</div>
+              <div><a href="https://faucet.apothem.network/" target="_blank">Testnet(Apothem) Faucet</a></div>
+              <div><a href="https://faucet.blocksscan.io/" target="_blank">Testnet Faucet by BlocksScan</a></div>
+            </div>
+            <div class="helper-block">
+              <div class="helper-title">Documentation</div>
+              <div><a href="https://xinfinorg.github.io/xdc-subnet-docs/deployment/launch_subnet" target="_blank">Official Subnet Documentation</a></div>
+              <div><a href="https://github.com/XinFinOrg/XDC-Subnet" target="_blank">XDC-Subnet Github</a></div>
+            </div>
           </div>
         </div>
       </div>
@@ -102,7 +110,7 @@
       </div>
     </div>
 
-    <div class="container">
+    <div class="container status-panel">
       <h1>Status</h1>
       <div id="state" class="output-status" >Status: Loading...</div>
     </div>

@@ -1,9 +1,11 @@
 head
   meta(charset='utf-8')
   title Subnet Configuration Generator
+  link(rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap')
   style
     include ./pure-min.css
     include ./custom.css
+    include ../generator-theme.css
 
 
 body
@@ -173,24 +175,17 @@ body
           .info-icon(tabindex="0" role="button" aria-label="more info") ?
           .tooltip Testnet is recommended for testing.
         label() Parent Network
-        br
-        br
         label.pure-radio(for='pn-radio-devnet')
-        input#pn-radio-devnet(type='radio' name='pnradio' value='pn-radio-devnet' checked)
+          input#pn-radio-devnet(type='radio' name='pnradio' value='pn-radio-devnet' checked)
+          |  XDC-Devnet
         //- |   XDC-Devnet &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; faucet:
-        |   XDC-Devnet
-        br
-        br
         label.pure-radio(for='pn-radio-testnet')
-        input#pn-radio-testnet(type='radio' name='pnradio' value='pn-radio-testnet')
-        |  XDC-Testnet/Apothem
+          input#pn-radio-testnet(type='radio' name='pnradio' value='pn-radio-testnet')
+          |  XDC-Testnet/Apothem
         //- |  XDC-Testnet/Apothem &nbsp;&nbsp;&nbsp;&nbsp; faucet:
-        br
-        br
         label.pure-radio(for='pn-radio-mainnet')
-        input#pn-radio-mainnet(type='radio' name='pnradio' value='pn-radio-mainnet') 
-        |   XDC-Mainnet
-
+          input#pn-radio-mainnet(type='radio' name='pnradio' value='pn-radio-mainnet')
+          |  XDC-Mainnet
       .pure-control-group 
         .info-container 
           .info-icon(tabindex="0" role="button" aria-label="more info") ?
@@ -198,18 +193,12 @@ body
             p - Full: All Subnet block headers are checkpointed on the Parentchain.
             p - Lite: Lite mode reduces gas cost by checkpointing only Gap block(450) and Epoch block(900) are checkpointed on the Parentchain.
         label() Relayer Mode
-        br
-        br
         label.pure-radio(for='rm-radio-full')
-        input#rm-radio-full(type='radio' name='rmradio' value='rm-radio-full' onclick="relayerFullClicked(this)" checked)
-        |   Full
-        br
-        br
+          input#rm-radio-full(type='radio' name='rmradio' value='rm-radio-full' onclick="relayerFullClicked(this)" checked)
+          |  Full
         label.pure-radio(for='rm-radio-lite')
-        input#rm-radio-lite(type='radio' name='rmradio' value='rm-radio-lite' onclick="relayerLiteClicked(this)")
-        |   Lite
-        br
-        br
+          input#rm-radio-lite(type='radio' name='rmradio' value='rm-radio-lite' onclick="relayerLiteClicked(this)")
+          |  Lite
         center
           #lite-mode-extra-info
         #xdczero-upper
@@ -226,18 +215,12 @@ body
                 .info-icon(tabindex="0" role="button" aria-label="more info") ?
                 .tooltip In Bi-Directional mode, Reverse CSC and Reverse XDC-Zero are also deployed
               label() XDC-Zero Mode
-              br
-              br
               label.pure-radio(for='zm-radio-one')
-              input#zm-radio-one(type='radio' name='zmradio' value='zm-radio-one' checked)
-              |   One-Directional (Subnet -> Parentnet)
-              br
-              br
+                input#zm-radio-one(type='radio' name='zmradio' value='zm-radio-one' checked)
+                |  One-Directional (Subnet -> Parentnet)
               label.pure-radio(for='zm-radio-bi')
-              input#zm-radio-bi(type='radio' name='zmradio' value='zm-radio-bi')
-              |   Bi-Directional (Subnet <-> Parentnet)
-              br 
-              br
+                input#zm-radio-bi(type='radio' name='zmradio' value='zm-radio-bi')
+                |  Bi-Directional (Subnet <-> Parentnet)
             .pure-control-group 
               .info-container 
                 .info-icon(tabindex="0" role="button" aria-label="more info") ?
