@@ -87,8 +87,8 @@ const config = {
     output_path: `${__dirname}/../../mount/generated/`,
   },
   xdpos: {
-    xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/devnet:dev-upgrade-cdce8fc",
-    nethermind: process.env.VERSION_NETHERMIND_IMAGE || "nethermindeth/nethermind:master-4e36ba0",
+    xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/xdposchain:v2.9.1-testnet",
+    nethermind: process.env.VERSION_NETHERMIND_IMAGE || "nethermindeth/nethermind:master-c88b947",
     stake_threshold: parseInt(process.env.MASTERNODE_MINIMUM_STAKE) || "",
     reward_yield: parseInt(process.env.REWARDS_YIELD) || "",
     foundation_addr: "",

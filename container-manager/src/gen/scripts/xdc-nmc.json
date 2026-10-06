@@ -50,5 +50,8 @@
   },
   "TraceStore": {
     "Enabled": false
+  },
+  "FlatDb": {
+    "Enabled": false
   }
 }
