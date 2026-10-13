@@ -55,7 +55,7 @@ const config = {
     // set, so a node build outside that repo/tag scheme can be used
     subnet_image: process.env.VERSION_SUBNET_IMAGE || "",
     bootnode: process.env.VERSION_BOOTNODE || "v0.3.1",
-    relayer: process.env.VERSION_RELAYER || "v0.3.1",
+    relayer: process.env.VERSION_RELAYER || "feature-v0.5.0",
     stats: process.env.VERSION_STATS || "v0.1.11",
     frontend: process.env.VERSION_FRONTEND || "v0.1.12",
     csc: process.env.VERSION_CSC || "v0.3.0",
