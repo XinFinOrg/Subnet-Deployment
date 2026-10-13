@@ -1,0 +1,404 @@
+/* Shared look for the subnet (/gen) and XDPoS (/gen_xdpos) generators.
+   Included after pure-min.css and each generator's custom.css, so it only
+   restyles them -- the show/hide toggles in custom.css keep working. Colours
+   match public/styles.css. */
+:root {
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --page-bg: #f5f7fb;
+  --card-bg: #ffffff;
+  --panel-bg: #f8fafc;
+  --border: #e5e9f0;
+  --input-border: #d5dbe5;
+  --text: #1e293b;
+  --heading: #0f172a;
+  --muted: #64748b;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --focus: rgba(79, 70, 229, 0.25);
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --warn: #b45309;
+  --warn-soft: #fffbeb;
+  --disabled-bg: #eef1f5;
+  --disabled-text: #a0aab8;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --label-width: 13em;
+}
+
+body {
+  margin: 0;
+  padding: 20px 24px 24px;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--card-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--heading);
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- form layout ---------- */
+#myForm {
+  margin: 0 auto;
+  max-width: 760px;
+}
+
+.pure-form fieldset {
+  padding: 4px 0 12px;
+}
+
+.pure-form fieldset + fieldset {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+/* each row is icon, label, input, hint; anything block-level inside a row
+   (an expanded panel, the XDC-Zero sub-group) wraps onto its own line */
+.pure-form-aligned .pure-control-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0;
+  row-gap: 6px;
+  margin-bottom: 12px;
+}
+
+.pure-control-group > .content,
+.pure-control-group > center,
+.pure-control-group > div:not(.info-container) {
+  flex-basis: 100%;
+}
+
+.pure-form-aligned .pure-control-group label {
+  flex: 0 0 auto;
+  width: var(--label-width);
+  margin: 0 12px 0 0;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* rows without a "?" icon keep their input in the same column as rows with one */
+.pure-form-aligned .pure-control-group:not(:has(> .info-container)) > label {
+  width: calc(var(--label-width) + 24px);
+}
+
+/* radio options: each <label class="pure-radio"> wraps its input and text */
+.pure-form-aligned .pure-control-group label.pure-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  margin: 0 18px 0 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* the XDC-Zero mode labels are too long to share a row: stack them in the
+   input column */
+.content .pure-control-group label.pure-radio + label.pure-radio {
+  flex-basis: 100%;
+  padding-left: calc(var(--label-width) - 1em + 36px);
+}
+
+.pure-form-message-inline {
+  padding-left: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- inputs ---------- */
+.pure-form input[type="text"],
+.pure-form input[type="number"],
+.pure-form select {
+  min-width: 220px;
+  padding: 7px 11px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pure-form input[type="text"]:focus,
+.pure-form input[type="number"]:focus,
+.pure-form select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.pure-form input::placeholder {
+  color: #a0aab8;
+}
+
+/* keys and image names are long: give them the rest of the row */
+.pure-form .pure-input-1-2,
+.pure-form .pure-input-2-3 {
+  flex: 1 1 200px;
+  width: auto;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-variant-ligatures: none;
+}
+
+.pure-form input[type="checkbox"],
+.pure-form input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  vertical-align: -3px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.pure-form input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+/* ---------- expandable option panels ---------- */
+.content {
+  margin: 10px 0 4px 32px;
+  padding: 14px 16px 4px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.content .pure-control-group label {
+  width: calc(var(--label-width) - 1em);
+}
+
+.content .pure-control-group:not(:has(> .info-container)) > label {
+  width: calc(var(--label-width) - 1em + 24px);
+}
+
+.content p {
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+/* ---------- info tooltips ---------- */
+.info-container {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.info-icon {
+  width: 18px;
+  height: 18px;
+  margin-left: 0;
+  line-height: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.info-icon:hover,
+.info-icon:focus {
+  outline: none;
+  color: #fff;
+  background: var(--accent);
+}
+
+.tooltip {
+  width: 240px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  color: #f1f5f9;
+  background: #0f172a;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+  /* open to the right so tooltips near the frame edge stay readable */
+  left: -6px;
+  transform: none;
+}
+
+.tooltip::after {
+  left: 12px;
+  border-color: #0f172a transparent transparent transparent;
+}
+
+.tooltip p {
+  margin: 0 0 4px;
+}
+
+/* ---------- buttons ---------- */
+.pure-button {
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--disabled-bg);
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.pure-button:hover {
+  background-image: none;
+  filter: none;
+  background-color: #e2e7ef;
+}
+
+.pure-button-primary {
+  color: #fff;
+  background: var(--accent);
+}
+
+.pure-button-primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.pure-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.pure-button[disabled],
+.pure-button:disabled {
+  opacity: 1;
+  color: var(--disabled-text);
+  background: var(--disabled-bg);
+  cursor: not-allowed;
+}
+
+.pure-form-aligned .pure-controls {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+#button-custom-subnet-key {
+  margin: 4px 0 12px;
+}
+
+/* ---------- messages ---------- */
+#incomplete-required-warning:not(:empty),
+#lite-mode-extra-info:not(:empty) {
+  margin-top: 8px;
+  padding: 8px 12px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+#submit-progress {
+  color: var(--muted);
+}
+
+.spinner {
+  border-color: var(--border);
+  border-top-color: var(--accent);
+}
+
+/* ---------- helpers (XDPoS page) ---------- */
+#helper-title {
+  margin: 32px 0 8px;
+}
+
+.helper-block {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 18px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.helper-block h4 {
+  margin: 0 0 8px;
+}
+
+#address-gen-pub,
+#address-gen-pk {
+  margin: 4px 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-ligatures: none;
+  word-break: break-all;
+}
+
+#disclaim-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+#disclaimer {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- submit result page ---------- */
+body > h1:empty {
+  display: none;
+}
+
+.chainspec-warnings {
+  margin: 16px 0;
+  padding: 12px 16px;
+  color: var(--warn);
+  background: var(--warn-soft);
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-md);
+}
+
+.chainspec-warnings h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--warn);
+}
+
+/* ---------- narrow frames ---------- */
+@media (max-width: 560px) {
+  body {
+    padding: 16px;
+  }
+  .pure-form-aligned .pure-control-group label,
+  .pure-form-aligned .pure-control-group:not(:has(> .info-container)) > label,
+  .content .pure-control-group:not(:has(> .info-container)) > label {
+    width: auto;
+  }
+  .pure-form .pure-input-1-2,
+  .pure-form .pure-input-2-3,
+  .pure-form input[type="text"],
+  .pure-form input[type="number"] {
+    width: 100%;
+    min-width: 0;
+  }
+  .content {
+    margin-left: 0;
+  }
+}

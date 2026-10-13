@@ -5,7 +5,9 @@
   "main": "test-docker.js",
   "scripts": {
     "start": "node express.js",
-    "dev": "HOSTPWD=$PWD/../mount/generated nodemon express.js"
+    "dev": "mkdir -p $PWD/../mount/generated/scripts/; HOSTPWD=$PWD/../mount/generated nodemon express.js",
+    "convert": "node libs/genesis-to-chainspec.js",
+    "check-chainspec": "node libs/check-chainspec.js"
   },
   "dependencies": {
     "axios": "^1.7.9",
