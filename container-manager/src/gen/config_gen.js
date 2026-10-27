@@ -57,7 +57,7 @@ const config = {
     bootnode: process.env.VERSION_BOOTNODE || "v0.3.1",
     relayer: process.env.VERSION_RELAYER || "feature-v0.5.0",
     stats: process.env.VERSION_STATS || "feature-v0.2.0",
-    frontend: process.env.VERSION_FRONTEND || "v0.1.12",
+    frontend: process.env.VERSION_FRONTEND || "feature-v0.2.0",
     csc: process.env.VERSION_CSC || "feature-v0.4.0",
     zero: process.env.VERSION_ZERO || "v0.3.0",
     subswap_frontend:
