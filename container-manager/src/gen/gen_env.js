@@ -79,7 +79,12 @@ function genNethermindSubnetConfig(subnet_id, key, ip_record) {
   const port = 20303 + subnet_id - 1;
   const rpcport = 8545 + subnet_id - 1;
   const ip = ip_record[`subnet${subnet_id}`];
+  const stats_ip = config.num_machines === 1 ? ip_record["stats"] : config.ip_1;
   const config_env = `
+NETHERMIND_ETHSTATSCONFIG_ENABLED=true
+NETHERMIND_ETHSTATSCONFIG_SERVER=ws://${stats_ip}:5213/api
+NETHERMIND_ETHSTATSCONFIG_SECRET=${config.secret_string}
+NETHERMIND_ETHSTATSCONFIG_NAME=subnet${subnet_id}
 NETHERMIND_JSONRPCCONFIG_ENABLED=true
 NETHERMIND_JSONRPCCONFIG_HOST=0.0.0.0
 NETHERMIND_JSONRPCCONFIG_PORT=${rpcport}
