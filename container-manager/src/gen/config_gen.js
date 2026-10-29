@@ -88,7 +88,7 @@ const config = {
   },
   xdpos: {
     xdposnode: process.env.VERSION_NODE_IMAGE || "xinfinorg/xdposchain:v2.9.1-testnet",
-    nethermind: process.env.VERSION_NETHERMIND_IMAGE || "nethermindeth/nethermind:master-4ea7290",
+    nethermind: process.env.VERSION_NETHERMIND_IMAGE || "nethermindeth/nethermind:master-7ebfcb2",
     stake_threshold: parseInt(process.env.MASTERNODE_MINIMUM_STAKE) || "",
     reward_yield: parseInt(process.env.REWARDS_YIELD) || "",
     foundation_addr: "",
