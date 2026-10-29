@@ -76,7 +76,17 @@ doc, (ip_record = gen_compose.injectNetworkConfig(doc));
 const commonconf = gen_env.genServicesConfig(ip_record);
 subnetconf = [];
 for (let i = 1; i <= config.num_subnet; i++) {
-  subnetconf.push(gen_env.genSubnetConfig(i, keys, ip_record));
+  if (configModule.isNethermindNode(i)) {
+    subnetconf.push({
+      filename: `subnet${i}nmc.env`,
+      content: gen_env.genNethermindSubnetConfig(i, keys, ip_record),
+    });
+  } else {
+    subnetconf.push({
+      filename: `subnet${i}.env`,
+      content: gen_env.genSubnetConfig(i, keys, ip_record),
+    });
+  }
 }
 const deployconf = gen_env.genContractDeployEnv(ip_record);
 
@@ -122,6 +132,15 @@ function writeGenerated(output_dir) {
     }
   );
 
+  // Pins the bootnode's identity so the enode written into every node's env
+  // file keeps matching it; the bootnode reads this via PRIVATE_KEY_FILE.
+  fs.mkdirSync(`${output_dir}/bootnodes`, { recursive: true });
+  fs.writeFileSync(
+    `${output_dir}/bootnodes/bootnode.key`,
+    `${config.bootnode_pk}\n`,
+    { mode: 0o600 }
+  );
+
   fs.writeFileSync(`${output_dir}/common.env`, commonconf, (err) => {
     if (err) {
       console.error(err);
@@ -146,8 +165,8 @@ function writeGenerated(output_dir) {
 
   for (let i = 1; i <= config.num_subnet; i++) {
     fs.writeFileSync(
-      `${output_dir}/subnet${i}.env`,
-      subnetconf[i - 1],
+      `${output_dir}/${subnetconf[i - 1].filename}`,
+      subnetconf[i - 1].content,
       (err) => {
         if (err) {
           console.error(err);
@@ -195,5 +214,25 @@ function copyScripts(output_dir) {
   fs.copyFileSync(
     `${__dirname}/scripts/add-node.sh`,
     `${output_dir}/scripts/add-node.sh`
+  );
+  // stop the containers and delete every xdcchain* data directory; prompts
+  // before it touches anything
+  fs.copyFileSync(
+    `${__dirname}/scripts/reset-chain.sh`,
+    `${output_dir}/scripts/reset-chain.sh`
+  );
+  // shared Nethermind config mounted by every nmc node, copied unconditionally
+  // so it is always available (chainspec.json is produced separately from
+  // genesis.json after puppeth runs). The subnet build differs from the
+  // private-network one gen_xdpos.js copies, so it has its own file.
+  fs.copyFileSync(
+    `${__dirname}/scripts/xdc-nmc-subnet.json`,
+    `${output_dir}/xdc-nmc-subnet.json`
+  );
+  // pre-boot check that chainspec.json still matches genesis.json; the check
+  // itself runs in a subnet-generator container, so only the wrapper is copied
+  fs.copyFileSync(
+    `${__dirname}/scripts/check-chainspec.sh`,
+    `${output_dir}/scripts/check-chainspec.sh`
   );
 }
