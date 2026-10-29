@@ -216,17 +216,17 @@ body
                 .tooltip In Bi-Directional mode, Reverse CSC and Reverse XDC-Zero are also deployed
               label() XDC-Zero Mode
               label.pure-radio(for='zm-radio-one')
-                input#zm-radio-one(type='radio' name='zmradio' value='zm-radio-one' checked)
+                input#zm-radio-one(type='radio' name='zmradio' value='zm-radio-one')
                 |  One-Directional (Subnet -> Parentnet)
               label.pure-radio(for='zm-radio-bi')
-                input#zm-radio-bi(type='radio' name='zmradio' value='zm-radio-bi')
+                input#zm-radio-bi(type='radio' name='zmradio' value='zm-radio-bi' checked)
                 |  Bi-Directional (Subnet <-> Parentnet)
             .pure-control-group 
               .info-container 
                 .info-icon(tabindex="0" role="button" aria-label="more info") ?
                 .tooltip Subswap is XDC provided default cross-chain application to handle token transfers between Subnet and Parentnet 
               label.pure-checkbox(for='subswap-checkbox') Subswap 
-              input#subswap-checkbox.checkbox-indent(type='checkbox' name="subswap-checkbox")
+              input#subswap-checkbox.checkbox-indent(type='checkbox' name="subswap-checkbox" checked)
 
 
 
